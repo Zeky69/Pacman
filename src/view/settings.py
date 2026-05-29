@@ -118,38 +118,53 @@ GOMMES_TILES = {
 
 
 MAZE_TILE = {
-    "corner_top_left": (16, 0),
-    "corner_top_right": (18, 0),
-    "corner_down_left": (16, 2),
-    "corner_down_right": (18, 2),
-    "horizontal_up": (17, 0),
-	"horizontal_down": (17, 2),
- 	"vertical_left": (16, 1),
-	"vertical_right": (18, 1),
- 
-	"border_corner_top_left": (16, 3),
-	"border_corner_top_right": (19, 3),
-	"border_corner_down_left": (16, 6),
-	"border_corner_down_right": (19, 6),
-	"border_horizontal_up": (20, 2),
-	"border_horizontal_down": (20, 0),
-	"border_vertical_left": (21, 1),
-	"border_vertical_right": (19, 1),
- 
-	"border_horizontal_top_left_inner": (17, 3),
-	"border_horizontal_top_right_inner": (18, 3),
-	"border_horizontal_down_left_inner": (17, 6),
-	"border_horizontal_down_right_inner": (18, 6),
- 
-	"border_vertical_left_down_inner": (16, 4),
-	"border_vertical_left_up_inner": (16, 5),
-	"border_vertical_right_down_inner": (19, 4),
-	"border_vertical_right_up_inner": (19, 5),
- 
-	"cross_left_top": (17, 4),
-	"cross_left_down": (17, 5),
-	"cross_right_top": (18, 4),
-	"cross_right_down": (18, 5),
- 
 	
+}
+
+SMALL_BLOCK = {
+    'cell_w': 8, 'cell_h': 8, 'cell_margin': 1, 
+    'block_w': 199, 'block_margin': 1
+}
+
+LARGE_BLOCK = {
+    'cell_w': 16, 'cell_h': 16, 'cell_margin': 1, 
+    'block_w': 171, 'palette_w': 27, 'block_margin': 2
+}
+
+
+
+
+
+MAZE_TILE = {
+  "corner_outer_top_left": [16,0],
+  "wall_horizontal_top": [17, 0],
+  "corner_outer_top_right": [18,0],
+  "corner_outer_top_left_hollow": [19,0],
+  "wall_horizontal_top_hollow": [20,0],
+  "corner_outer_top_right_hollow": [21,0],
+  "wall_vertical_left": [16,1],
+  "wall_fill": [17,1],
+  "wall_vertical_right": [18,1],
+  "wall_vertical_left_hollow": [19,1],
+  "empty": [20,1],
+  "wall_vertical_right_hollow": [21,1],
+  "corner_outer_bottom_left": [16,2],
+  "wall_horizontal_bottom": [17,2],
+  "corner_outer_bottom_right": [18,2],
+  "corner_outer_bottom_left_hollow": [19,2],
+  "wall_horizontal_bottom_hollow": [20,2],
+  "corner_outer_bottom_right_hollow": [21,2],
+  "junction_t_right": [16,4],
+  "corner_inner_top_left": [17,4],
+  "corner_inner_top_right": [18,4],
+  "junction_t_left_b": [19,4],
+  "junction_cross": [16,5],
+  "corner_inner_bottom_left": [17,5],
+  "corner_inner_bottom_right": [18,5],
+  "junction_cross_c": [19,5],
+  "wall_end_left": [16,6],
+  "wall_end_bottom_left": [17,6],
+  "wall_end_bottom_right": [18,6],
+  "wall_end_right": [19,6],
+  "wall_horizontal_bottom_b": [19,7]
 }
