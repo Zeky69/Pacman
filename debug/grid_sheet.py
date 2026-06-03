@@ -37,7 +37,7 @@ def draw_large_grid(surface, start_y):
                 pygame.draw.rect(surface, (255, 0, 0), rect, 1)
 # --- INITIALISATION ---
 pygame.init()
-IMAGE_PATH = "assets\\default.png"
+IMAGE_PATH = "assets/default.png"
 
 try:
     sprite_sheet = pygame.image.load(IMAGE_PATH)
@@ -59,10 +59,10 @@ for y in range(4):
 # draw_small_grid(canvas, start_y=187)
 
 # --- VARIABLES DE CAMERA (Zoom & Pan) ---
-zoom = 2.0           # Zoom de départ (x2)
-cam_x = 0.0          # Position X de la caméra
-cam_y = 0.0          # Position Y de la caméra
-dragging = False     # Savoir si on est en train de cliquer-glisser
+zoom = 2.0   
+cam_x = 0.0
+cam_y = 0.0 
+dragging = False
 last_mouse_pos = (0, 0)
 
 # --- BOUCLE PRINCIPALE ---

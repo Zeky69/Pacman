@@ -11,4 +11,4 @@ dependencies = [
 
 
 [tool.uv.sources]
-mazegenerator = { path = "lib/mazegenerator-00001-py3-none-any.whl" }
+mazegenerator = { path = "lib/mazegenerator-2.0.2-py3-none-any.whl" }

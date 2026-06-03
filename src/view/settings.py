@@ -92,12 +92,12 @@ GHOST_ANIMATIONS = {
 
 
 FOOD = {
-	'cherry': (0, 3),
-	'strawberry': (1, 3),
-	'orange': (2, 3),
-	'apple': (3, 3),
-	'grape': (4, 3),
-	'galaxian': (5, 3),
+	'cherry': (0, 2),
+	'strawberry': (1, 2),
+	'orange': (2, 2),
+	'apple': (3, 2),
+	'grape': (4, 2),
+	'galaxian': (5, 2),
 }
 
 COLORS = {
