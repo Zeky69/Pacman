@@ -19,10 +19,10 @@ class Game:
 
         cx, cy = config["width"] - 1, config["height"] - 1
         self.ghosts = [
-            Blinky(cx, cy),
-            Pinky(0, cy),
-            Inky(cx, 0),
-            Clyde(0, 0),
+            Blinky(cx, cy,direction="up"),
+            Pinky(0, cy, direction="up"),
+            Inky(cx, 0, direction="down"),
+            Clyde(0, 0, direction="down"),
         ]
         self.score = 0
 

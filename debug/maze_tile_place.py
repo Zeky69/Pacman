@@ -107,8 +107,8 @@ class MazeDebugger:
         image_path = BASE_DIR / 'assets' / 'default.png'
         sheet = SpriteSheet(str(image_path))
         
-        macro_row = COLORS['pink'][1]
-        palette_idx = COLORS['pink'][0]
+        macro_row = COLORS['blue'][1]
+        palette_idx = COLORS['blue'][0]
 
         self.tile_sprites = {
             name: sheet.get_small_sprite(macro_row, palette_idx, coords[0], coords[1], scale=SCALE)

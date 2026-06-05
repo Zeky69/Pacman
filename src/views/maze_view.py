@@ -12,7 +12,7 @@ from .settings import MAZE_TILE, COLORS, BORDER_MAPS, CORNER_MAP
 class MazeView:
     """Dessine un `Maze` en tuiles à partir d'une sprite-sheet."""
 
-    def __init__(self, sheet, scale=4, color="pink"):
+    def __init__(self, sheet, scale=4, color="blue"):
         self.scale = scale
         self.tile_size = 8 * scale
         palette_index, macro_row = COLORS[color]
