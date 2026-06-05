@@ -41,13 +41,18 @@ class GameView:
 
         # 3. Redimensionnement flottant pour remplir l'écran au mieux (ratio conservé).
         self.fit = min(screen_w / maze_w, screen_h / maze_h)
-        self.maze_surface = pygame.transform.smoothscale(
+        self.maze_surface = pygame.transform.scale(
             base_surface, (round(maze_w * self.fit), round(maze_h * self.fit))
         )
 
         # 4. Centrage de la surface finale.
         self.offset_x = (screen_w - self.maze_surface.get_width()) // 2
         self.offset_y = (screen_h - self.maze_surface.get_height()) // 2
+
+        # Pas exact (flottant) entre deux cases -> positionnement sans dérive.
+        self.cell_pitch = tile * self.fit
+        # Taille d'une tuile affichée : les entités sont dimensionnées à cette taille.
+        self.tile_px = round(self.cell_pitch)
 
         self._animators = {}  # cache : (id(entity), direction) -> Animator
 
@@ -62,7 +67,7 @@ class GameView:
                 data = GHOST_ANIMATIONS[entity.direction]
                 palette_index, macro_row = COLORS[entity.color]
             self._animators[key] = Animator(
-                data, self.sheet, palette_index, macro_row, scale=self.scale
+                data, self.sheet, palette_index, macro_row, size=self.tile_px
             )
         return self._animators[key]
 
@@ -74,8 +79,10 @@ class GameView:
         for entity in game.entities():
             animator = self._animator_for(entity)
             animator.update(now)
-            x = self.offset_x + round(entity.x * self.fit)
-            y = self.offset_y + round(entity.y * self.fit)
+            # Case (col, row) -> centre de la tuile correspondante à l'écran.
+            gx, gy = game.maze.cell_to_grid(entity.col, entity.row)
+            x = self.offset_x + round((gx + 0.5) * self.cell_pitch)
+            y = self.offset_y + round((gy + 0.5) * self.cell_pitch)
             animator.draw(self.screen, x, y)
 
         pygame.display.flip()

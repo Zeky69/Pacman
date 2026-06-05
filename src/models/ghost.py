@@ -1,14 +1,15 @@
 """Modèle de fantôme : état pur, sans dépendance graphique.
 
-La logique d'IA (poursuite, dispersion, mode effrayé) reste à implémenter :
-le dossier `debug/` ne fournissait que les animations.
+La position est exprimée en CASE du labyrinthe (col, row), dans les
+coordonnées des cellules d'origine (comme `maze.entry` / `maze.exit`).
+La conversion case -> pixels est faite par la vue.
 """
 
 
 class Ghost:
-    def __init__(self, x=0, y=0, direction="right", color="red"):
-        self.x = x
-        self.y = y
+    def __init__(self, col=0, row=0, direction="right", color="red"):
+        self.col = col              # case (colonne) dans le labyrinthe
+        self.row = row              # case (ligne) dans le labyrinthe
         self.direction = direction
         self.color = color          # 'red' | 'pink' | 'cyan' | 'orange'
         self.frightened = False
@@ -19,20 +20,20 @@ class Ghost:
 
 
 class Blinky(Ghost):
-    def __init__(self, x=0, y=0, direction="right"):
-        super().__init__(x, y, direction, color="red")
+    def __init__(self, col=0, row=0, direction="right"):
+        super().__init__(col, row, direction, color="red")
 
 
 class Pinky(Ghost):
-    def __init__(self, x=0, y=0, direction="right"):
-        super().__init__(x, y, direction, color="pink")
+    def __init__(self, col=0, row=0, direction="right"):
+        super().__init__(col, row, direction, color="pink")
 
 
 class Inky(Ghost):
-    def __init__(self, x=0, y=0, direction="right"):
-        super().__init__(x, y, direction, color="cyan")
+    def __init__(self, col=0, row=0, direction="right"):
+        super().__init__(col, row, direction, color="cyan")
 
 
 class Clyde(Ghost):
-    def __init__(self, x=0, y=0, direction="right"):
-        super().__init__(x, y, direction, color="orange")
+    def __init__(self, col=0, row=0, direction="right"):
+        super().__init__(col, row, direction, color="orange")

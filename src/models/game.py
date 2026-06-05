@@ -11,8 +11,19 @@ class Game:
     def __init__(self, config):
         self.config = config
         self.maze = Maze(cols=config["width"], rows=config["height"])
-        self.pacman = Pacman()
-        self.ghosts = [Blinky(), Pinky(), Inky(), Clyde()]
+
+        # Placement par case (col, row) du labyrinthe.
+        # Si la largeur est paire, on décale d'une case à gauche pour rester centré.
+        pac_col = config["width"] // 2 - (1 if config["width"] % 2 == 0 else 0)
+        self.pacman = Pacman(pac_col, config["height"] // 2)
+
+        cx, cy = config["width"] - 1, config["height"] - 1
+        self.ghosts = [
+            Blinky(cx, cy),
+            Pinky(0, cy),
+            Inky(cx, 0),
+            Clyde(0, 0),
+        ]
         self.score = 0
 
     def entities(self):

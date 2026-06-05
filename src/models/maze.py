@@ -47,6 +47,10 @@ class Maze:
                 if not (cell & WEST) and x > 0:       grid[gy][gx - 1] = 0
         return grid
 
+    def cell_to_grid(self, col, row):
+        """Case d'origine (col, row) -> index (gx, gy) de son centre dans la grille doublée."""
+        return col * 2 + 1, row * 2 + 1
+
     def is_wall(self, gx, gy):
         """True si la case (gx, gy) est un mur (hors-grille = mur)."""
         if 0 <= gx < self.width and 0 <= gy < self.height:

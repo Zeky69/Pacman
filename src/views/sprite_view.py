@@ -11,26 +11,27 @@ class Animator:
         {"frame": [(col, row), ...], "x_flip", "y_flip", "loop_type", "rotation"}
     """
 
-    def __init__(self, data, sheet, palette_index=0, macro_row=0, scale=3, speed=100):
+    def __init__(self, data, sheet, palette_index=0, macro_row=0, size=32, speed=100):
         self.loop_type = data.get("loop_type", "none")
         self.speed = speed              # ms entre deux frames
         self.index = 0
         self.finished = False
         self.last_update = pygame.time.get_ticks()
-        self.frames = self._build_frames(data, sheet, palette_index, macro_row, scale)
+        self.frames = self._build_frames(data, sheet, palette_index, macro_row, size)
         self.image = self.frames[self.index]
 
     @staticmethod
-    def _build_frames(data, sheet, palette_index, macro_row, scale):
-        """Extrait et transforme (flip/rotation) toutes les frames."""
+    def _build_frames(data, sheet, palette_index, macro_row, size):
+        """Extrait, transforme (flip/rotation) et met à la taille `size` (px)."""
         frames = []
         for col, row in data["frame"]:
-            img = sheet.get_large_sprite(macro_row, palette_index, col, row, scale)
+            img = sheet.get_large_sprite(macro_row, palette_index, col, row, 1)
             if data["x_flip"] or data["y_flip"]:
                 img = pygame.transform.flip(img, data["x_flip"], data["y_flip"])
             if data["rotation"] != 0:
                 img = pygame.transform.rotate(img, data["rotation"])
-            frames.append(img)
+            # scale() = plus proche voisin -> pixels nets (pas de flou).
+            frames.append(pygame.transform.scale(img, (size, size)))
 
         # En pingpong, on rejoue les frames intermédiaires à l'envers.
         if data["loop_type"] == "pingpong" and len(frames) > 2:
