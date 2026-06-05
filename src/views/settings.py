@@ -178,8 +178,12 @@ GOMMES_TILES = {
 	'big': (15, 3)
 }
 
+# Décalages verticaux internes à la sprite-sheet (en pixels).
+MACRO_ROW_HEIGHT = 186      # hauteur d'une "grande ligne" de la planche
+LARGE_BLOCK_Y_OFFSET = 82   # décalage des sprites 16x16 sous les 8x8
+
 SMALL_BLOCK = {
-    'cell_w': 8, 'cell_h': 8, 'cell_margin': 1, 
+    'cell_w': 8, 'cell_h': 8, 'cell_margin': 1,
     'block_w': 199, 'block_margin': 1
 }
 
@@ -223,8 +227,28 @@ MAZE_TILE = {
   "border_corner_inner_bottom_right_top": [16,5],
   "border_corner_inner_bottom_left_top": [19,5],
   "border_corner_inner_top_left_bottom": [19,4],
-  
-  
+}
+
+BORDER_MAPS = {
+    "TL": {14: "border_corner_outer_top_left", 15: "wall_fill"},
+    "TR": {13: "border_corner_outer_top_right", 15: "wall_fill"},
+    "BL": {11: "border_corner_outer_bottom_left", 15: "wall_fill"},
+    "BR": {7: "border_corner_inner_top_left", 15: "wall_fill"},
+    "T":  {12: "border_wall_horizontal_bottom", 13: "border_corner_inner_bottom_left",
+           14: "border_corner_inner_bottom_right", 15: "wall_fill"},
+    "B":  {3: "border_wall_horizontal_top", 7: "border_corner_outer_bottom_right",
+           11: "border_corner_inner_top_right", 15: "wall_fill"},
+    "L":  {10: "border_wall_vertical_right", 11: "border_corner_inner_top_right_bottom",
+           14: "border_corner_inner_bottom_right_top", 15: "wall_fill"},
+    "R":  {5: "border_wall_vertical_left", 7: "border_corner_inner_top_left_bottom",
+           13: "border_corner_inner_bottom_left_top", 15: "wall_fill"},
+}
+
+CORNER_MAP = {
+    0: None, 1: "corner_outer_top_left", 2: "corner_outer_top_right", 3: "wall_horizontal_top",
+    4: "corner_outer_bottom_left", 5: "wall_vertical_left", 6: "wall_fill", 7: "corner_inner_top_left",
+    8: "corner_outer_bottom_right", 9: "wall_fill", 10: "wall_vertical_right", 11: "corner_inner_top_right",
+    12: "wall_horizontal_bottom", 13: "corner_inner_bottom_left", 14: "corner_inner_bottom_right", 15: "wall_fill",
 }
 
 
