@@ -1,103 +1,152 @@
 
 PACMAN_ANIMATIONS = {
-    'right': {'frame': [(6, 3), (6, 4), (6, 5)],
-              'x_flip': False, 
-              'y_flip': False,
-              'loop_type': 'pingpong',
-              'rotation': 0
-              },
+    'right': {
+        'frame': [(6, 3), (6, 4), (6, 5)],
+        'x_flip': False, 
+        'y_flip': False,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        },
 
-    'left':  {'frame': [(6, 3), (6, 4), (6, 5)],
-              'x_flip': True, 
-              'y_flip': False,
-              'loop_type': 'pingpong',
-              'rotation': 0
-              },
+    'left': {
+        'frame': [(6, 3), (6, 4), (6, 5)],
+        'x_flip': True, 
+        'y_flip': False,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        },
 
-    'up':    {'frame': [(7, 3), (7, 4), (6, 5)],
-              'x_flip': False, 
-              'y_flip': True,
-			  'loop_type': 'pingpong',
-			  'rotation': 0
-              },
+    'up': {
+        'frame': [(7, 3), (7, 4), (6, 5)],
+        'x_flip': False, 
+        'y_flip': True,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        },
 
-    'down':  {'frame':  [(7, 3), (7, 4), (6, 5)],
-              'x_flip': False, 
-              'y_flip': False,
-			  'loop_type': 'pingpong',
-			  'rotation': 0
-              },
-    'death_up': {'frame': [(0, 3), (1, 3),(2, 3),(3, 3),(4, 3),(5, 3),
-                        (0, 4), (1, 4),(2, 4),(3, 4),(4, 4),(5, 4)],
-              'x_flip': False,
-              'y_flip': False,
-              'loop_type': 'once',
-              'rotation': 0
-              },
-    'death_down': {'frame': [(0, 3), (1, 3),(2, 3),(3, 3),(4, 3),(5, 3),
-                        (0, 4), (1, 4),(2, 4),(3, 4),(4, 4),(5, 4)],
-                  'x_flip': False,
-                  'y_flip': True,
-                  'loop_type': 'once',
-                  'rotation': 0
-                  },
-    'death_right': {'frame': [(0, 3), (1, 3),(2, 3),(3, 3),(4, 3),(5, 3),
-						(0, 4), (1, 4),(2, 4),(3, 4),(4, 4),(5, 4)],
-				  'x_flip': False,
-				  'y_flip': False,
-				  'loop_type': 'once',
-				  'rotation': 90
+    'down':  {
+        'frame':  [(7, 3), (7, 4), (6, 5)],
+        'x_flip': False, 
+        'y_flip': False,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        },
+    'death_up': {
+        'frame': [(0, 3), (1, 3),(2, 3),(3, 3),(4, 3),(5, 3),
+                    (0, 4), (1, 4),(2, 4),(3, 4),(4, 4),(5, 4)],
+        'x_flip': False,
+        'y_flip': False,
+        'loop_type': 'once',
+        'rotation': 0
+        },
+    'death_down': {
+        'frame': [(0, 3), (1, 3),(2, 3),(3, 3),(4, 3),(5, 3),
+                    (0, 4), (1, 4),(2, 4),(3, 4),(4, 4),(5, 4)],
+        'x_flip': False,
+        'y_flip': True,
+        'loop_type': 'once',
+        'rotation': 0
+        },
+    'death_right': {
+        'frame': [(0, 3), (1, 3),(2, 3),(3, 3),(4, 3),(5, 3),
+                    (0, 4), (1, 4),(2, 4),(3, 4),(4, 4),(5, 4)],
+        'x_flip': False,
+        'y_flip': False,
+        'loop_type': 'once',
+        'rotation': 90
 				  },
-    'death_left': {'frame': [(0, 3), (1, 3),(2, 3),(3, 3),(4, 3),(5, 3),
-						(0, 4), (1, 4),(2, 4),(3, 4),(4, 4),(5, 4)],
-				  'x_flip': False,
-				  'y_flip': False,
-				  'loop_type': 'once',
-				  'rotation': -90
-				  }
+    'death_left': {
+        'frame': [(0, 3), (1, 3),(2, 3),(3, 3),(4, 3),(5, 3),
+                    (0, 4), (1, 4),(2, 4),(3, 4),(4, 4),(5, 4)],
+        'x_flip': False,
+        'y_flip': False,
+        'loop_type': 'once',
+        'rotation': -90
+        }
 }
 
 GHOST_ANIMATIONS = {
-	'right': {'frame': [(0, 0), (1, 0)],
-			  'x_flip': False, 
-			  'y_flip': False,
-			  'loop_type': 'pingpong',
-			  'rotation': 0
-			  },
-	'left':  {'frame': [(4,0), (5, 0)],
-			  'x_flip': False, 
-			  'y_flip': False,
-			  'loop_type': 'pingpong',
-			  'rotation': 0
-			  },
-	'up':    {'frame': [(6, 0), (7, 0)],
-			  'x_flip': False, 
-			  'y_flip': False,
-			  'loop_type': 'pingpong',
-			  'rotation': 0
-			  },
-	'down':  {'frame': [(2, 0), (3, 0)],
-			  'x_flip': False, 
-			  'y_flip': False,
-			  'loop_type': 'pingpong',
-			  'rotation': 0
-			  },
-	'frightened': {'frame': [(0, 5), (1, 5)],
-				 'x_flip': False, 
-				 'y_flip': False,
-				 'loop_type': 'pingpong',
-				 'rotation': 0
-				 },
+	'right': {
+        'frame': [(0, 0), (1, 0)],
+        'x_flip': False, 
+        'y_flip': False,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        },
+	'left':  {
+        'frame': [(4,0), (5, 0)],
+        'x_flip': False, 
+        'y_flip': False,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        },
+	'up':    {
+        'frame': [(6, 0), (7, 0)],
+        'x_flip': False, 
+        'y_flip': False,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        },
+	'down':  {
+        'frame': [(2, 0), (3, 0)],
+        'x_flip': False, 
+        'y_flip': False,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        },
+	'frightened': {
+        'frame': [(0, 5), (1, 5)],
+        'x_flip': False, 
+        'y_flip': False,
+        'loop_type': 'pingpong',
+        'rotation': 0
+        }
 }
 
 
 FOOD = {
-	'cherry': (0, 2),
-	'strawberry': (1, 2),
-	'orange': (2, 2),
-	'apple': (3, 2),
-	'grape': (4, 2),
-	'galaxian': (5, 2),
+	'cherry': { 
+        'frame': [(0, 2)], 
+        'x_flip': False,
+        'y_flip': False,
+        'default_color': 'white-2',
+        'loop_type': 'none',
+        },
+	'strawberry': { 
+        'frame': [(1, 2)],
+        'x_flip': False,
+        'y_flip': False,
+        'default_color': 'white-3',
+        'loop_type': 'none',
+        },
+	'orange': {
+        'frame': [(2, 2)],
+        'x_flip': False,
+        'y_flip': False,
+        'default_color': 'orange-2',
+        'loop_type': 'none',
+        },
+	'apple': { 
+        'frame': [(3, 2)], 
+        'x_flip': False, 
+        'y_flip': False,
+        'default_color': 'white-3',
+        'loop_type': 'none',
+        },
+	'grape': { 
+        'frame': [(4, 2)], 
+        'x_flip': False, 
+        'y_flip': False,
+        'default_color': 'white-4',
+        'loop_type': 'none',
+        },
+	'galaxian': { 
+        'frame': [(5, 2)], 
+        'x_flip': False, 
+        'y_flip': False,
+        'default_color': 'yellow-2',
+        'loop_type': 'none',
+        },
 }
 
 COLORS = {
@@ -105,20 +154,28 @@ COLORS = {
 	'pink': (1, 0),
 	'cyan': (2, 0),
 	'orange': (3, 0),
+    'beige-2': (4, 0),
+    'red-2': (0, 1),
 	'black': (1, 1),
 	'yellow': (2, 1),
 	'blue': (3, 1),
+    'white': (4, 1),
+    'red-3': (0, 2),
+    'beige': (1, 2),
+    'white-2': (2, 2),
+    'white-3': (3, 2),
+	'orange-2': (4, 2),
+    'white-4': (0, 3),
+    'yellow-2': (1, 3),
+    'white-5': (2, 3),
+    'beige-3': (3, 3),
+    'fatih': (4, 3)
 }
 
 
 GOMMES_TILES = {
 	'small': (15, 1),
 	'big': (15, 3)
-}
-
-
-MAZE_TILE = {
-	
 }
 
 SMALL_BLOCK = {
@@ -168,4 +225,56 @@ MAZE_TILE = {
   "border_corner_inner_top_left_bottom": [19,4],
   
   
+}
+
+
+ASCII_TILE = {
+    '0': (0, 2),
+    '1': (1, 2),
+    '2': (2, 2),
+    '3': (3, 2),
+    '4': (4, 2),
+    '5': (5, 2),
+    '6': (6, 2),
+    '7': (7, 2),
+    '8': (8, 2),
+    '9': (9, 2),
+    'A': (0, 3),
+    'B': (1, 3),
+    'C': (2, 3),
+    'D': (3, 3),
+    'E': (4, 3),
+    'F': (5, 3),
+    'G': (6, 3),
+    'H': (7, 3),
+    'I': (8, 3),
+    'J': (9, 3),
+    'K': (10, 3),
+    'L': (11, 3),
+    'M': (12, 3),
+    'N': (0, 4),
+    'O': (1, 4),
+    'P': (2, 4),
+    'Q': (3, 4),
+    'R': (4, 4),
+    'S': (5, 4),
+    'T': (6, 4),
+    'U': (7, 4),
+    'V': (8, 4),
+    'W': (9, 4),
+    'X': (10, 4),
+    'Y': (11, 4),
+    'Z': (12, 4),
+    '!': (12, 2),
+    '"': (10, 2),
+    '/': (10, 1),
+    '-': (11, 1),
+    '.': (12, 1),
+}
+
+SCORE_SPRITE = {
+    '200': (2, 5),
+    '400': (3, 5),
+    '800': (4, 5),
+    '1600': (5, 5),
 }
