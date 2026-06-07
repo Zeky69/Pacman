@@ -19,7 +19,7 @@ class GameController:
         # Plein écran "sans bordure" : fenêtre à la taille du bureau, sans
         # changement de mode vidéo (évite le flash fenêtré -> plein écran).
         width, height = pygame.display.get_desktop_sizes()[0]
-        self.screen = pygame.display.set_mode((width, height), pygame.NOFRAME | pygame.SCALED)
+        self.screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN | pygame.NOFRAME)
         pygame.display.set_caption("Pac-Man")
         self.clock = pygame.time.Clock()
 

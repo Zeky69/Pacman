@@ -3,10 +3,11 @@
 import pygame
 
 from ..models.pacman import Pacman
+from ..models.game import HALF
 from .sprites import SpriteSheet
 from .maze_view import MazeView
 from .sprite_view import Animator
-from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS
+from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES
 
 ASSET_PATH = "assets/default.png"
 BACKGROUND = (0, 0, 0)
@@ -53,6 +54,18 @@ class GameView:
         self.cell_pitch = tile * self.fit
         # Taille d'une tuile affichée : les entités sont dimensionnées à cette taille.
         self.tile_px = round(self.cell_pitch)
+        # Facteur pixel-modèle → pixel-écran (1 pixel-modèle = cell_pitch / HALF px écran).
+        self.model_scale = self.cell_pitch / HALF
+
+        # Sprites des gommes pré-scalés.
+        sc, sr = GOMMES_TILES["small"]
+        bc, br = GOMMES_TILES["big"]
+        raw_small = self.sheet.get_small_sprite(0, 0, sc, sr, 1)
+        raw_big   = self.sheet.get_small_sprite(0, 0, bc, br, 1)
+        s_size = max(2, round(self.cell_pitch * 0.5))
+        b_size = max(4, round(self.cell_pitch * 0.85))
+        self._gom_img  = pygame.transform.scale(raw_small, (s_size, s_size))
+        self._sgom_img = pygame.transform.scale(raw_big,   (b_size, b_size))
 
         self._animators = {}  # cache : (id(entity), direction) -> Animator
 
@@ -76,13 +89,25 @@ class GameView:
         self.screen.fill(BACKGROUND)
         self.screen.blit(self.maze_surface, (self.offset_x, self.offset_y))
 
+        # Gommes
+        for gx, gy in game.maze.pacgums:
+            sx = self.offset_x + round((gx + 0.5) * self.cell_pitch)
+            sy = self.offset_y + round((gy + 0.5) * self.cell_pitch)
+            self.screen.blit(self._gom_img, self._gom_img.get_rect(center=(sx, sy)))
+
+        # Super-gommes (clignotement toutes les 300 ms)
+        if now % 600 < 300:
+            for gx, gy in game.maze.super_pacgums:
+                sx = self.offset_x + round((gx + 0.5) * self.cell_pitch)
+                sy = self.offset_y + round((gy + 0.5) * self.cell_pitch)
+                self.screen.blit(self._sgom_img, self._sgom_img.get_rect(center=(sx, sy)))
+
         for entity in game.entities():
             animator = self._animator_for(entity)
             animator.update(now)
-            # Case (col, row) -> centre de la tuile correspondante à l'écran.
-            gx, gy = game.maze.cell_to_grid(entity.col, entity.row)
-            x = self.offset_x + round((gx + 0.5) * self.cell_pitch)
-            y = self.offset_y + round((gy + 0.5) * self.cell_pitch)
+            # Pixel-modèle -> pixel-écran (mouvement continu, sub-case).
+            x = self.offset_x + round(entity.x * self.model_scale)
+            y = self.offset_y + round(entity.y * self.model_scale)
             animator.draw(self.screen, x, y)
 
         pygame.display.flip()

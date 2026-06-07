@@ -23,5 +23,5 @@ class InputController:
                     return False
                 direction = KEY_TO_DIRECTION.get(event.key)
                 if direction:
-                    game.pacman.direction = direction
+                    game.pacman.queued_direction = direction
         return True

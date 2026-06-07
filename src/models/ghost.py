@@ -1,39 +1,49 @@
-"""Modèle de fantôme : état pur, sans dépendance graphique.
-
-La position est exprimée en CASE du labyrinthe (col, row), dans les
-coordonnées des cellules d'origine (comme `maze.entry` / `maze.exit`).
-La conversion case -> pixels est faite par la vue.
-"""
+import pygame
 
 
 class Ghost:
-    def __init__(self, col=0, row=0, direction="right", color="red"):
-        self.col = col              # case (colonne) dans le labyrinthe
-        self.row = row              # case (ligne) dans le labyrinthe
+    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right", color="red"):
+        self.x = float(x)
+        self.y = float(y)
+        self._tile = tile_px
+        self.size = tile_px // 2
+        self.speed = speed
         self.direction = direction
-        self.color = color          # 'red' | 'pink' | 'cyan' | 'orange'
+        self.color = color
         self.frightened = False
 
+    @property
+    def col(self):
+        return int(self.x // self._tile)
+
+    @property
+    def row(self):
+        return int(self.y // self._tile)
+
+    @property
+    def rect(self):
+        h = self.size // 2
+        return pygame.Rect(int(self.x) - h, int(self.y) - h, self.size, self.size)
+
     def update(self, maze, pacman):
-        """À implémenter : déplacement / IA contre `maze` et `pacman`."""
         pass
 
 
 class Blinky(Ghost):
-    def __init__(self, col=0, row=0, direction="right"):
-        super().__init__(col, row, direction, color="red")
+    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+        super().__init__(x, y, tile_px, speed, direction, color="red")
 
 
 class Pinky(Ghost):
-    def __init__(self, col=0, row=0, direction="right"):
-        super().__init__(col, row, direction, color="pink")
+    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+        super().__init__(x, y, tile_px, speed, direction, color="pink")
 
 
 class Inky(Ghost):
-    def __init__(self, col=0, row=0, direction="right"):
-        super().__init__(col, row, direction, color="cyan")
+    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+        super().__init__(x, y, tile_px, speed, direction, color="cyan")
 
 
 class Clyde(Ghost):
-    def __init__(self, col=0, row=0, direction="right"):
-        super().__init__(col, row, direction, color="orange")
+    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+        super().__init__(x, y, tile_px, speed, direction, color="orange")

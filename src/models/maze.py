@@ -28,6 +28,15 @@ class Maze:
         self.height = len(self.grid)
         self.width = len(self.grid[0])
 
+        self.pacgums: set[tuple[int, int]] = {
+            (gx, gy)
+            for gy in range(self.height)
+            for gx in range(self.width)
+            if self.grid[gy][gx] == 0
+        }
+        self.super_pacgums: set[tuple[int, int]] = self._pick_super_pacgums()
+        self.pacgums -= self.super_pacgums
+
     @staticmethod
     def _build_wall_grid(code_grid):
         """Convertit la grille de codes en grille doublée (murs = 1)."""
@@ -46,6 +55,24 @@ class Maze:
                 if not (cell & SOUTH) and y < h - 1:  grid[gy + 1][gx] = 0
                 if not (cell & WEST) and x > 0:       grid[gy][gx - 1] = 0
         return grid
+
+    def _pick_super_pacgums(self) -> set[tuple[int, int]]:
+        """4 cells les plus proches des coins (une par coin, sans doublon)."""
+        corners = [
+            (0, 0),
+            (self.width - 1, 0),
+            (0, self.height - 1),
+            (self.width - 1, self.height - 1),
+        ]
+        result: set[tuple[int, int]] = set()
+        available = set(self.pacgums)
+        for cx, cy in corners:
+            if not available:
+                break
+            best = min(available, key=lambda p: (p[0] - cx) ** 2 + (p[1] - cy) ** 2)
+            result.add(best)
+            available.discard(best)
+        return result
 
     def cell_to_grid(self, col, row):
         """Case d'origine (col, row) -> index (gx, gy) de son centre dans la grille doublée."""
