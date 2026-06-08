@@ -3,7 +3,7 @@
 import pygame
 
 from ..models.pacman import Pacman
-from ..models.ghost import Inky, Blinky
+from ..models.ghost import Inky, Blinky, Clyde
 from ..models.game import HALF
 from .sprites import SpriteSheet
 from .maze_view import MazeView
@@ -137,6 +137,17 @@ class GameView:
         pygame.draw.circle(overlay, (0,   255, 255, 220), (tx, ty), 6)   # cible Inky
         self.screen.blit(overlay, (0, 0))
 
+    def _draw_clyde_radius(self, game):
+        """Cercle de rayon FLEE_RADIUS cases autour de Clyde (orange)."""
+        clyde = next((g for g in game.ghosts if isinstance(g, Clyde)), None)
+        if clyde is None:
+            return
+        px, py = self._entity_screen_pos(game.pacman)
+        radius_px = round(Clyde.FLEE_RADIUS * self.cell_pitch * 2)
+        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        pygame.draw.circle(overlay, (255, 184, 81, 180), (px, py), radius_px, 2)
+        self.screen.blit(overlay, (0, 0))
+
     def render(self, game, now):
         """Dessine une frame complète à partir de l'état du jeu."""
         self.screen.fill(BACKGROUND)
@@ -157,6 +168,7 @@ class GameView:
 
         self._draw_ghost_paths(game)
         self._draw_inky_line(game)
+        self._draw_clyde_radius(game)
 
         for entity in game.entities():
             animator = self._animator_for(entity)

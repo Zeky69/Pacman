@@ -202,7 +202,7 @@ class Pinky(Ghost):
 
     def _target(self, pacman):
         dc, dr = _DELTA[pacman.direction]
-        return pacman.col + 2 * dc, pacman.row + 2 * dr
+        return pacman.col + 1 * dc, pacman.row + 1 * dr
 
 
 class Inky(Ghost):
@@ -218,5 +218,16 @@ class Inky(Ghost):
 
 
 class Clyde(Ghost):
+    FLEE_RADIUS = 2  # cases
+
     def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
         super().__init__(x, y, tile_px, speed, direction, color="orange")
+
+    def _target(self, pacman):
+        dc = pacman.col - self.col
+        dr = pacman.row - self.row
+        dist = (dc * dc + dr * dr) ** 0.5
+        if dist <= self.FLEE_RADIUS:
+            # Fuite : symétrique de Pac-Man par rapport à Clyde
+            return 2 * self.col - pacman.col, 2 * self.row - pacman.row
+        return pacman.col, pacman.row
