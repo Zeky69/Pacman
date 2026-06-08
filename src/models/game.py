@@ -37,10 +37,13 @@ class Game:
 
         ghost_speed = config.get("ghost_speed", 1.0)
         cx, cy = config["width"] - 1, config["height"] - 1
+        blinky = Blinky(*_center(cx, cy), speed=ghost_speed, direction="up")
+        inky   = Inky(*_center(cx,  0),   speed=ghost_speed, direction="down")
+        inky.blinky = blinky
         self.ghosts = [
-            Blinky(*_center(cx, cy), speed=ghost_speed, direction="up"),
+            blinky,
             Pinky(*_center(0,  cy),  speed=ghost_speed, direction="up"),
-            Inky(*_center(cx,  0),   speed=ghost_speed, direction="down"),
+            inky,
             Clyde(*_center(0,   0),  speed=ghost_speed, direction="down"),
         ]
         self.score = 0

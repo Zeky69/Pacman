@@ -116,11 +116,16 @@ class Ghost:
         """Case cible du fantôme (par défaut : la case de Pac-Man)."""
         return pacman.col, pacman.row
 
+    def _clamp_target(self, col, row, maze):
+        """Ramène (col, row) dans les bornes valides de la grille de passages."""
+        max_col = maze.width  // 2 - 1
+        max_row = maze.height // 2 - 1
+        return max(0, min(col, max_col)), max(0, min(row, max_row))
+
     def compute_path(self, maze, pacman):
         """Chemin le plus court vers la cible via BFS."""
-        target_col, target_row = self._target(pacman)
-        return _bfs(maze, self.col, self.row, _OPPOSITE[self.direction],
-                    target_col, target_row)
+        tc, tr = self._clamp_target(*self._target(pacman), maze)
+        return _bfs(maze, self.col, self.row, _OPPOSITE[self.direction], tc, tr)
 
     def _choose_direction(self, maze, target_col, target_row):
         """Premier pas du chemin BFS vers la cible (sans demi-tour)."""
@@ -130,7 +135,12 @@ class Ghost:
             dc = path[1][0] - path[0][0]
             dr = path[1][1] - path[0][1]
             return _DIR_FROM_DELTA[(dc, dr)]
-        return _OPPOSITE[self.direction]
+        # BFS n'a pas trouvé de chemin : toute direction valide sauf demi-tour.
+        opposite = _OPPOSITE[self.direction]
+        for d in _PRIORITY:
+            if d != opposite and self._can_enter(d, maze):
+                return d
+        return opposite  # cul-de-sac : demi-tour en dernier recours
 
     def update(self, maze, pacman):
         dx, dy = _DELTA[self.direction]
@@ -162,7 +172,7 @@ class Ghost:
             # Sans ce garde, deux décisions consécutives depuis le même centre
             # peuvent libérer la direction opposée et provoquer un demi-tour.
             if remaining > 0:
-                target_col, target_row = self._target(pacman)
+                target_col, target_row = self._clamp_target(*self._target(pacman), maze)
                 self.direction = self._choose_direction(maze, target_col, target_row)
                 dx, dy = _DELTA[self.direction]
 
@@ -194,6 +204,13 @@ class Pinky(Ghost):
 class Inky(Ghost):
     def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
         super().__init__(x, y, tile_px, speed, direction, color="cyan")
+        self.blinky = None  # set externally after construction
+
+    def _target(self, pacman):
+        if self.blinky is None:
+            return pacman.col, pacman.row
+        return (2 * pacman.col - self.blinky.col,
+                2 * pacman.row - self.blinky.row)
 
 
 class Clyde(Ghost):

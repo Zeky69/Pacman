@@ -3,6 +3,7 @@
 import pygame
 
 from ..models.pacman import Pacman
+from ..models.ghost import Inky, Blinky
 from ..models.game import HALF
 from .sprites import SpriteSheet
 from .maze_view import MazeView
@@ -110,6 +111,32 @@ class GameView:
             pygame.draw.lines(overlay, (*rgb, 160), False, points, 4)
         self.screen.blit(overlay, (0, 0))
 
+    def _entity_screen_pos(self, entity):
+        """Position écran (centre) d'une entité depuis ses coordonnées modèle."""
+        x = self.offset_x + round(entity.x * self.model_scale)
+        y = self.offset_y + round(entity.y * self.model_scale)
+        return x, y
+
+    def _draw_inky_line(self, game):
+        """Droite Blinky–Pac-Man étendue jusqu'à la cible d'Inky."""
+        blinky = next((g for g in game.ghosts if isinstance(g, Blinky)), None)
+        inky   = next((g for g in game.ghosts if isinstance(g, Inky)),   None)
+        if blinky is None or inky is None:
+            return
+
+        bx, by = self._entity_screen_pos(blinky)
+        px, py = self._entity_screen_pos(game.pacman)
+        # Cible d'Inky = symétrique de Blinky par rapport à Pac-Man
+        tc, tr = inky._target(game.pacman)
+        tx, ty = self._tile_screen_pos(tc, tr)
+
+        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        pygame.draw.line(overlay, (0, 255, 255, 180), (bx, by), (tx, ty), 3)
+        pygame.draw.circle(overlay, (255, 0,   0,   220), (bx, by), 6)   # Blinky
+        pygame.draw.circle(overlay, (255, 255, 0,   220), (px, py), 6)   # Pac-Man (milieu)
+        pygame.draw.circle(overlay, (0,   255, 255, 220), (tx, ty), 6)   # cible Inky
+        self.screen.blit(overlay, (0, 0))
+
     def render(self, game, now):
         """Dessine une frame complète à partir de l'état du jeu."""
         self.screen.fill(BACKGROUND)
@@ -129,6 +156,7 @@ class GameView:
                 self.screen.blit(self._sgom_img, self._sgom_img.get_rect(center=(sx, sy)))
 
         self._draw_ghost_paths(game)
+        self._draw_inky_line(game)
 
         for entity in game.entities():
             animator = self._animator_for(entity)
