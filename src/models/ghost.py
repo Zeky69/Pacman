@@ -200,6 +200,10 @@ class Pinky(Ghost):
     def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
         super().__init__(x, y, tile_px, speed, direction, color="pink")
 
+    def _target(self, pacman):
+        dc, dr = _DELTA[pacman.direction]
+        return pacman.col + 2 * dc, pacman.row + 2 * dr
+
 
 class Inky(Ghost):
     def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
