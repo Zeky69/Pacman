@@ -72,7 +72,7 @@ class GameView:
         raw_small = self.sheet.get_small_sprite(0, 0, sc, sr, 1)
         raw_big   = self.sheet.get_small_sprite(0, 0, bc, br, 1)
         s_size = max(2, round(self.cell_pitch * 0.5))
-        b_size = max(4, round(self.cell_pitch * 0.85))
+        b_size = max(4, round(self.cell_pitch * 0.6))
         self._gom_img  = pygame.transform.scale(raw_small, (s_size, s_size))
         self._sgom_img = pygame.transform.scale(raw_big,   (b_size, b_size))
 
