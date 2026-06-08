@@ -18,6 +18,14 @@ BASE_CELL = 8
 # Palette de Pac-Man dans la planche (palette_index, macro_row).
 PACMAN_PALETTE = (2, 1)
 
+# Couleurs RGB des chemins de chaque fantôme.
+_PATH_COLORS = {
+    "red":    (255, 0,   0),
+    "pink":   (255, 184, 255),
+    "cyan":   (0,   255, 255),
+    "orange": (255, 184, 81),
+}
+
 
 class GameView:
     """Charge les ressources graphiques et dessine l'état du jeu."""
@@ -84,6 +92,24 @@ class GameView:
             )
         return self._animators[key]
 
+    def _tile_screen_pos(self, col, row):
+        """Convertit une case originale (col, row) en coordonnées écran."""
+        x = self.offset_x + round((col * 2 + 1.5) * self.cell_pitch)
+        y = self.offset_y + round((row * 2 + 1.5) * self.cell_pitch)
+        return x, y
+
+    def _draw_ghost_paths(self, game):
+        """Dessine le chemin prévu de chaque fantôme avec sa couleur."""
+        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        for ghost in game.ghosts:
+            path = ghost.compute_path(game.maze, game.pacman)
+            if len(path) < 2:
+                continue
+            rgb = _PATH_COLORS.get(ghost.color, (255, 255, 255))
+            points = [self._tile_screen_pos(c, r) for c, r in path]
+            pygame.draw.lines(overlay, (*rgb, 160), False, points, 4)
+        self.screen.blit(overlay, (0, 0))
+
     def render(self, game, now):
         """Dessine une frame complète à partir de l'état du jeu."""
         self.screen.fill(BACKGROUND)
@@ -101,6 +127,8 @@ class GameView:
                 sx = self.offset_x + round((gx + 0.5) * self.cell_pitch)
                 sy = self.offset_y + round((gy + 0.5) * self.cell_pitch)
                 self.screen.blit(self._sgom_img, self._sgom_img.get_rect(center=(sx, sy)))
+
+        self._draw_ghost_paths(game)
 
         for entity in game.entities():
             animator = self._animator_for(entity)

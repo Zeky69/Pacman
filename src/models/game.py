@@ -31,15 +31,17 @@ class Game:
         ]
 
         pac_col = config["width"] // 2 - (1 if config["width"] % 2 == 0 else 0)
+        pacman_speed = config.get("pacman_speed", 1.0)
         self.pacman = Pacman(*_center(pac_col, config["height"] // 2),
-                             speed=config.get("pacman_speed", 1.0))
+                             speed=pacman_speed)
 
+        ghost_speed = config.get("ghost_speed", 1.0)
         cx, cy = config["width"] - 1, config["height"] - 1
         self.ghosts = [
-            Blinky(*_center(cx, cy), direction="up"),
-            Pinky(*_center(0,  cy),  direction="up"),
-            Inky(*_center(cx,  0),   direction="down"),
-            Clyde(*_center(0,   0),  direction="down"),
+            Blinky(*_center(cx, cy), speed=ghost_speed, direction="up"),
+            Pinky(*_center(0,  cy),  speed=ghost_speed, direction="up"),
+            Inky(*_center(cx,  0),   speed=ghost_speed, direction="down"),
+            Clyde(*_center(0,   0),  speed=ghost_speed, direction="down"),
         ]
         self.score = 0
 
