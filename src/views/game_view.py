@@ -13,6 +13,9 @@ from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES
 ASSET_PATH = "assets/default.png"
 BACKGROUND = (0, 0, 0)
 
+DEBUG_SHOW_PATHS   = False   # chemins BFS de chaque fantôme
+DEBUG_SHOW_TARGETS = False   # visualisations des cibles (Inky line, Clyde radius)
+
 # Côté d'une cellule de base (avant mise à l'échelle), en pixels.
 BASE_CELL = 8
 
@@ -137,6 +140,18 @@ class GameView:
         pygame.draw.circle(overlay, (0,   255, 255, 220), (tx, ty), 6)   # cible Inky
         self.screen.blit(overlay, (0, 0))
 
+    def _draw_ghost_targets(self, game):
+        """Petit carré coloré sur la case cible de chaque fantôme."""
+        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        sq = max(4, round(self.cell_pitch * 0.4))
+        for ghost in game.ghosts:
+            tc, tr = ghost._clamp_target(*ghost._target(game.pacman), game.maze)
+            tx, ty = self._tile_screen_pos(tc, tr)
+            rgb = _PATH_COLORS.get(ghost.color, (255, 255, 255))
+            rect = pygame.Rect(tx - sq // 2, ty - sq // 2, sq, sq)
+            pygame.draw.rect(overlay, (*rgb, 220), rect)
+        self.screen.blit(overlay, (0, 0))
+
     def _draw_clyde_radius(self, game):
         """Cercle de rayon FLEE_RADIUS cases autour de Clyde (orange)."""
         clyde = next((g for g in game.ghosts if isinstance(g, Clyde)), None)
@@ -166,9 +181,12 @@ class GameView:
                 sy = self.offset_y + round((gy + 0.5) * self.cell_pitch)
                 self.screen.blit(self._sgom_img, self._sgom_img.get_rect(center=(sx, sy)))
 
-        self._draw_ghost_paths(game)
-        self._draw_inky_line(game)
-        self._draw_clyde_radius(game)
+        if DEBUG_SHOW_PATHS:
+            self._draw_ghost_paths(game)
+        if DEBUG_SHOW_TARGETS:
+            self._draw_ghost_targets(game)
+            self._draw_inky_line(game)
+            self._draw_clyde_radius(game)
 
         for entity in game.entities():
             animator = self._animator_for(entity)
