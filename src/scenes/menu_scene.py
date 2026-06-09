@@ -3,11 +3,9 @@
 import pygame
 
 from .scene import Scene
+from ..views.bitmap_font import BitmapFont
 
 BACKGROUND = (0, 0, 0)
-TITLE_COLOR = (255, 255, 0)
-TEXT_COLOR = (255, 255, 255)
-SELECTED_COLOR = (255, 255, 0)
 
 
 class MenuScene(Scene):
@@ -19,8 +17,11 @@ class MenuScene(Scene):
         super().__init__(app)
         self.selected = 0
         h = app.screen.get_height()
-        self.title_font = pygame.font.Font(None, max(48, h // 6))
-        self.font = pygame.font.Font(None, max(28, h // 16))
+        big = max(2, h // 64)
+        small = max(1, h // 144)
+        self.title_font = BitmapFont(app.sheet, "yellow", scale=big)
+        self.font = BitmapFont(app.sheet, "white", scale=small)
+        self.font_sel = BitmapFont(app.sheet, "yellow", scale=small)
 
     def handle_events(self, events, now):
         for event in events:
@@ -54,15 +55,10 @@ class MenuScene(Scene):
         screen.fill(BACKGROUND)
         w, h = screen.get_size()
 
-        title = self.title_font.render("PAC-MAN", True, TITLE_COLOR)
-        screen.blit(title, title.get_rect(center=(w // 2, h // 4)))
+        self.title_font.draw(screen, "PAC-MAN", center=(w // 2, h // 4))
 
         start_y = h // 2
-        gap = self.font.get_height() + 20
+        gap = self.font.height + 28
         for i, option in enumerate(self.OPTIONS):
-            selected = (i == self.selected)
-            color = SELECTED_COLOR if selected else TEXT_COLOR
-            label = f"> {option} <" if selected else option
-            text = self.font.render(label, True, color)
-            rect = text.get_rect(center=(w // 2, start_y + i * gap))
-            screen.blit(text, rect)
+            font = self.font_sel if i == self.selected else self.font
+            font.draw(screen, option, center=(w // 2, start_y + i * gap))

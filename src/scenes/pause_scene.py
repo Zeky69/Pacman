@@ -8,10 +8,8 @@ Le fond est une capture figée du jeu (le modèle n'est plus mis à jour).
 import pygame
 
 from .scene import Scene
+from ..views.bitmap_font import BitmapFont
 
-TITLE_COLOR = (255, 255, 0)
-TEXT_COLOR = (255, 255, 255)
-SELECTED_COLOR = (255, 255, 0)
 OVERLAY_COLOR = (0, 0, 0, 180)
 
 
@@ -29,8 +27,11 @@ class PauseScene(Scene):
         self.overlay = pygame.Surface(app.screen.get_size(), pygame.SRCALPHA)
         self.overlay.fill(OVERLAY_COLOR)
         h = app.screen.get_height()
-        self.title_font = pygame.font.Font(None, max(48, h // 8))
-        self.font = pygame.font.Font(None, max(28, h // 16))
+        big = max(2, h // 72)
+        small = max(1, h // 160)
+        self.title_font = BitmapFont(app.sheet, "yellow", scale=big)
+        self.font = BitmapFont(app.sheet, "white", scale=small)
+        self.font_sel = BitmapFont(app.sheet, "yellow", scale=small)
 
     def _resume(self):
         """Reprend la partie en cours (même instance de GameScene)."""
@@ -62,15 +63,10 @@ class PauseScene(Scene):
         screen.blit(self.overlay, (0, 0))
         w, h = screen.get_size()
 
-        title = self.title_font.render("PAUSE", True, TITLE_COLOR)
-        screen.blit(title, title.get_rect(center=(w // 2, h // 4)))
+        self.title_font.draw(screen, "PAUSE", center=(w // 2, h // 4))
 
         start_y = h // 2
-        gap = self.font.get_height() + 20
+        gap = self.font.height + 28
         for i, option in enumerate(self.OPTIONS):
-            selected = (i == self.selected)
-            color = SELECTED_COLOR if selected else TEXT_COLOR
-            label = f"> {option} <" if selected else option
-            text = self.font.render(label, True, color)
-            rect = text.get_rect(center=(w // 2, start_y + i * gap))
-            screen.blit(text, rect)
+            font = self.font_sel if i == self.selected else self.font
+            font.draw(screen, option, center=(w // 2, start_y + i * gap))

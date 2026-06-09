@@ -54,15 +54,37 @@ class Game:
             Clyde(*_center(0,   0),  speed=ghost_speed, direction="down"),
         ]
         self.score = 0
+        self.level = 1
+
+        # Timer de niveau (en ms). Le temps n'avance que pendant update() :
+        # la pause (qui ne fait pas d'update) gèle donc naturellement le timer.
+        self.max_time = config.get("level_max_time", 90)
+        self.elapsed_ms = 0
+        self._last_now = None
+
+    @property
+    def time_remaining(self):
+        """Secondes restantes sur le niveau (jamais négatif)."""
+        return max(0, self.max_time - self.elapsed_ms // 1000)
 
     def entities(self):
         return [self.pacman, *self.ghosts]
 
-    def update(self):
+    def update(self, now):
+        self._tick_timer(now)
         self.pacman.update(self.maze)
         for ghost in self.ghosts:
             ghost.update(self.maze, self.pacman)
         self._collect()
+
+    def _tick_timer(self, now):
+        """Accumule le temps écoulé, en clampant les sauts (pause, lag)."""
+        if self._last_now is None:
+            self._last_now = now
+        dt = now - self._last_now
+        self._last_now = now
+        # Clamp : après une pause ou un freeze, le delta peut être énorme.
+        self.elapsed_ms += max(0, min(dt, 100))
 
     def _collect(self):
         pac = self.pacman

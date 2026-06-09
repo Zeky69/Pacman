@@ -26,6 +26,11 @@ class GameController:
         self.clock = pygame.time.Clock()
         self.running = True
 
+        # Planche de sprites partagée (police bitmap des scènes, icônes...).
+        from ..views.sprites import SpriteSheet
+        from ..views.game_view import ASSET_PATH
+        self.sheet = SpriteSheet(ASSET_PATH)
+
         # Scène de départ : le menu principal.
         from ..scenes.menu_scene import MenuScene
         self.scene = MenuScene(self)

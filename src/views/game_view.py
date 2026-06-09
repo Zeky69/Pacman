@@ -8,6 +8,7 @@ from ..models.game import HALF
 from .sprites import SpriteSheet
 from .maze_view import MazeView
 from .sprite_view import Animator
+from .bitmap_font import BitmapFont
 from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES
 
 ASSET_PATH = "assets/default.png"
@@ -39,10 +40,16 @@ class GameView:
         self.sheet = SpriteSheet(ASSET_PATH)
         screen_w, screen_h = screen.get_size()
 
+        # Bandes réservées au HUD (haut = score/level/time, bas = vies).
+        # Le labyrinthe est ajusté pour tenir entre les deux.
+        self.hud_top = max(40, screen_h // 12)
+        self.hud_bottom = max(40, screen_h // 12)
+        avail_h = screen_h - self.hud_top - self.hud_bottom
+
         # 1. Échelle entière (tuiles nettes) pour pré-rendre le labyrinthe.
         self.scale = max(1, min(
             screen_w // (maze.width * BASE_CELL),
-            screen_h // (maze.height * BASE_CELL),
+            avail_h // (maze.height * BASE_CELL),
         ))
         self.maze_view = MazeView(self.sheet, scale=self.scale)
 
@@ -52,15 +59,16 @@ class GameView:
         base_surface = pygame.Surface((maze_w, maze_h))
         self.maze_view.draw(base_surface, maze, 0, 0)
 
-        # 3. Redimensionnement flottant pour remplir l'écran au mieux (ratio conservé).
-        self.fit = min(screen_w / maze_w, screen_h / maze_h)
+        # 3. Redimensionnement flottant dans la zone de jeu (ratio gardé).
+        self.fit = min(screen_w / maze_w, avail_h / maze_h)
         self.maze_surface = pygame.transform.scale(
             base_surface, (round(maze_w * self.fit), round(maze_h * self.fit))
         )
 
-        # 4. Centrage de la surface finale.
+        # 4. Centrage : horizontal sur l'écran, vertical entre les bandes HUD.
         self.offset_x = (screen_w - self.maze_surface.get_width()) // 2
-        self.offset_y = (screen_h - self.maze_surface.get_height()) // 2
+        self.offset_y = self.hud_top + (
+            avail_h - self.maze_surface.get_height()) // 2
 
         # Pas exact (flottant) entre deux cases -> positionnement sans dérive.
         self.cell_pitch = tile * self.fit
@@ -80,6 +88,17 @@ class GameView:
         self._sgom_img = pygame.transform.scale(raw_big,   (b_size, b_size))
 
         self._animators = {}  # cache : (id(entity), direction) -> Animator
+
+        # Ressources HUD : police sprite Pac-Man (3 couleurs) + icône de vie.
+        hud_s = max(2, self.hud_top // 20)
+        self.hud_font = BitmapFont(self.sheet, "white", scale=hud_s)
+        self.hud_font_yellow = BitmapFont(self.sheet, "yellow", scale=hud_s)
+        self.hud_font_red = BitmapFont(self.sheet, "red", scale=hud_s)
+        pac_palette, pac_macro = PACMAN_PALETTE
+        life_raw = self.sheet.get_large_sprite(pac_macro, pac_palette, 6, 3, 1)
+        life_size = max(12, int(self.hud_bottom * 0.7))
+        self._life_icon = pygame.transform.scale(
+            life_raw, (life_size, life_size))
 
     def _animator_for(self, entity):
         """Renvoie (en le créant au besoin) l'animateur courant de l'entité."""
@@ -163,6 +182,29 @@ class GameView:
         pygame.draw.circle(overlay, (255, 184, 81, 180), (px, py), radius_px, 2)
         self.screen.blit(overlay, (0, 0))
 
+    def _draw_hud(self, game):
+        """Barre du haut (score / level / time) + vies en bas (icônes)."""
+        w, h = self.screen.get_size()
+        top_cy = self.hud_top // 2
+
+        # Barre du haut (police sprite Pac-Man).
+        self.hud_font.draw(self.screen, f"SCORE {game.score}",
+                           midleft=(24, top_cy))
+        self.hud_font_yellow.draw(self.screen, f"LEVEL {game.level}",
+                                  center=(w // 2, top_cy))
+
+        secs = game.time_remaining
+        font = self.hud_font_red if secs <= 10 else self.hud_font
+        font.draw(self.screen, f"TIME {secs}", midright=(w - 24, top_cy))
+
+        # Barre du bas : une icône Pac-Man par vie restante.
+        icon_w = self._life_icon.get_width()
+        y = h - self.hud_bottom // 2
+        for i in range(max(0, game.lives)):
+            x = 24 + i * (icon_w + 10)
+            rect = self._life_icon.get_rect(midleft=(x, y))
+            self.screen.blit(self._life_icon, rect)
+
     def render(self, game, now):
         """Dessine une frame complète à partir de l'état du jeu."""
         self.screen.fill(BACKGROUND)
@@ -195,3 +237,5 @@ class GameView:
             x = self.offset_x + round(entity.x * self.model_scale)
             y = self.offset_y + round(entity.y * self.model_scale)
             animator.draw(self.screen, x, y)
+
+        self._draw_hud(game)

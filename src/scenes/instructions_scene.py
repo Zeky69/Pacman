@@ -3,17 +3,17 @@
 import pygame
 
 from .scene import Scene
+from ..views.bitmap_font import BitmapFont
 
 BACKGROUND = (0, 0, 0)
-TITLE_COLOR = (255, 255, 0)
-TEXT_COLOR = (255, 255, 255)
 
+# Uniquement des caractères gérés par la police sprite (A-Z, 0-9, - . ! " /).
 LINES = (
-    "Move: Arrow keys or WASD",
-    "Eat all the pacgums to clear a level",
-    "Avoid the ghosts - they cost you a life",
-    "Super-pacgum: ghosts become edible for a while",
-    "ESC: back to menu",
+    "MOVE - ARROW KEYS OR WASD",
+    "EAT ALL PACGUMS TO CLEAR A LEVEL",
+    "AVOID GHOSTS - THEY COST A LIFE",
+    "SUPER-PACGUM MAKES GHOSTS EDIBLE",
+    "ESC - PAUSE THE GAME",
 )
 
 
@@ -23,8 +23,9 @@ class InstructionsScene(Scene):
     def __init__(self, app):
         super().__init__(app)
         h = app.screen.get_height()
-        self.title_font = pygame.font.Font(None, max(40, h // 8))
-        self.font = pygame.font.Font(None, max(24, h // 20))
+        self.title_font = BitmapFont(app.sheet, "yellow",
+                                     scale=max(2, h // 80))
+        self.font = BitmapFont(app.sheet, "white", scale=max(1, h // 200))
 
     def handle_events(self, events, now):
         for event in events:
@@ -37,12 +38,9 @@ class InstructionsScene(Scene):
         screen.fill(BACKGROUND)
         w, h = screen.get_size()
 
-        title = self.title_font.render("INSTRUCTIONS", True, TITLE_COLOR)
-        screen.blit(title, title.get_rect(center=(w // 2, h // 6)))
+        self.title_font.draw(screen, "INSTRUCTIONS", center=(w // 2, h // 6))
 
         start_y = h // 3
-        gap = self.font.get_height() + 16
+        gap = self.font.height + 22
         for i, line in enumerate(LINES):
-            text = self.font.render(line, True, TEXT_COLOR)
-            rect = text.get_rect(center=(w // 2, start_y + i * gap))
-            screen.blit(text, rect)
+            self.font.draw(screen, line, center=(w // 2, start_y + i * gap))
