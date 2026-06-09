@@ -100,16 +100,48 @@ class GameView:
         self._life_icon = pygame.transform.scale(
             life_raw, (life_size, life_size))
 
-    def _animator_for(self, entity):
+    def _animator_for(self, entity, now=0):
         """Renvoie (en le créant au besoin) l'animateur courant de l'entité."""
-        key = (id(entity), entity.direction)
-        if key not in self._animators:
-            if isinstance(entity, Pacman):
+        if isinstance(entity, Pacman):
+            key = (id(entity), entity.direction)
+            if key not in self._animators:
                 data = PACMAN_ANIMATIONS[entity.direction]
                 palette_index, macro_row = PACMAN_PALETTE
-            else:  # Ghost
+                self._animators[key] = Animator(
+                    data, self.sheet, palette_index, macro_row, size=self.tile_px
+                )
+            return self._animators[key]
+
+        # Ghost mangé : retour au spawn en noir
+        if entity.eaten:
+            key = (id(entity), "eaten", entity.direction)
+            if key not in self._animators:
                 data = GHOST_ANIMATIONS[entity.direction]
-                palette_index, macro_row = COLORS[entity.color]
+                palette_index, macro_row = COLORS["black"]
+                self._animators[key] = Animator(
+                    data, self.sheet, palette_index, macro_row, size=self.tile_px
+                )
+            return self._animators[key]
+
+        # Ghost effrayé → animation frightened + couleur propre (ou red-2 si clignotement)
+        if entity.frightened:
+            if entity.is_blinking(now) and (now // 250) % 2 == 0:
+                color = "red-2"
+            else:
+                color = entity.color
+            key = (id(entity), "frightened", color)
+            if key not in self._animators:
+                data = GHOST_ANIMATIONS["frightened"]
+                palette_index, macro_row = COLORS[color]
+                self._animators[key] = Animator(
+                    data, self.sheet, palette_index, macro_row, size=self.tile_px
+                )
+            return self._animators[key]
+
+        key = (id(entity), entity.direction)
+        if key not in self._animators:
+            data = GHOST_ANIMATIONS[entity.direction]
+            palette_index, macro_row = COLORS[entity.color]
             self._animators[key] = Animator(
                 data, self.sheet, palette_index, macro_row, size=self.tile_px
             )
@@ -231,7 +263,7 @@ class GameView:
             self._draw_clyde_radius(game)
 
         for entity in game.entities():
-            animator = self._animator_for(entity)
+            animator = self._animator_for(entity, now)
             animator.update(now)
             # Pixel-modèle -> pixel-écran (mouvement continu, sub-case).
             x = self.offset_x + round(entity.x * self.model_scale)
