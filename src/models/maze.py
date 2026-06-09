@@ -6,6 +6,8 @@ On la transforme en une grille "doublée" où 1 = mur et 0 = passage, ce qui
 permet collisions et auto-tiling.
 """
 
+from collections import deque
+
 from mazegenerator import MazeGenerator
 
 # Bits de direction d'un mur (identiques à l'encodage de MazeGenerator).
@@ -28,11 +30,12 @@ class Maze:
         self.height = len(self.grid)
         self.width = len(self.grid[0])
 
+        reachable = self._reachable_cells()
         self.pacgums: set[tuple[int, int]] = {
             (gx, gy)
             for gy in range(self.height)
             for gx in range(self.width)
-            if self.grid[gy][gx] == 0
+            if self.grid[gy][gx] == 0 and (gx, gy) in reachable
         }
         self.super_pacgums: set[tuple[int, int]] = self._pick_super_pacgums()
         self.pacgums -= self.super_pacgums
@@ -55,6 +58,23 @@ class Maze:
                 if not (cell & SOUTH) and y < h - 1:  grid[gy + 1][gx] = 0
                 if not (cell & WEST) and x > 0:       grid[gy][gx - 1] = 0
         return grid
+
+    def _reachable_cells(self) -> set[tuple[int, int]]:
+        """BFS depuis l'entrée du labyrinthe — exclut les cases enclavées (ex: le '42' gravé par MazeGenerator)."""
+        start_gx = self.entry[0] * 2 + 1
+        start_gy = self.entry[1] * 2 + 1
+        visited: set[tuple[int, int]] = set()
+        q: deque[tuple[int, int]] = deque([(start_gx, start_gy)])
+        visited.add((start_gx, start_gy))
+        while q:
+            cx, cy = q.popleft()
+            for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nx, ny = cx + dx, cy + dy
+                if 0 <= nx < self.width and 0 <= ny < self.height \
+                        and self.grid[ny][nx] == 0 and (nx, ny) not in visited:
+                    visited.add((nx, ny))
+                    q.append((nx, ny))
+        return visited
 
     def _pick_super_pacgums(self) -> set[tuple[int, int]]:
         """4 cells les plus proches des coins (une par coin, sans doublon)."""
