@@ -195,5 +195,3 @@ class GameView:
             x = self.offset_x + round(entity.x * self.model_scale)
             y = self.offset_y + round(entity.y * self.model_scale)
             animator.draw(self.screen, x, y)
-
-        pygame.display.flip()

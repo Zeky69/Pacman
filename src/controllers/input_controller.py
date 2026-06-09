@@ -16,17 +16,19 @@ KEY_TO_DIRECTION = {
 
 
 class InputController:
-    """Traduit les événements pygame en actions sur le jeu."""
+    """Traduit les événements clavier en actions sur le jeu."""
 
-    def handle_events(self, game):
-        """Traite la file d'événements. Renvoie False pour quitter."""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return False
-                direction = KEY_TO_DIRECTION.get(event.key)
-                if direction:
-                    game.pacman.queued_direction = direction
-        return True
+    def apply(self, events, game):
+        """Applique les entrées de mouvement de la frame.
+
+        Renvoie l'action de scène demandée (``"pause"`` sur Échap) ou ``None``.
+        """
+        for event in events:
+            if event.type != pygame.KEYDOWN:
+                continue
+            if event.key == pygame.K_ESCAPE:
+                return "pause"
+            direction = KEY_TO_DIRECTION.get(event.key)
+            if direction:
+                game.pacman.queued_direction = direction
+        return None
