@@ -4,7 +4,7 @@ import pygame
 
 from .maze import Maze
 from .pacman import Pacman
-from .ghost import Blinky, Pinky, Inky, Clyde
+from .ghost import Blinky, Pinky, Inky, Clyde, FRIGHTENED_DURATION, EATEN_DURATION
 
 TILE_PX = 16   # case d'origine en pixels-modèle
 HALF    = TILE_PX // 2  # cellule de la grille doublée = hitbox des entités
@@ -58,13 +58,25 @@ class Game:
     def entities(self):
         return [self.pacman, *self.ghosts]
 
-    def update(self):
+    def update(self, now=0):
         self.pacman.update(self.maze)
         for ghost in self.ghosts:
-            ghost.update(self.maze, self.pacman)
-        self._collect()
+            ghost.update(self.maze, self.pacman, now)
+        self._collect(now)
+        self._check_ghost_collisions(now)
 
-    def _collect(self):
+    def _check_ghost_collisions(self, now):
+        fps = self.config.get("fps", 60)
+        pac_rect = self.pacman.rect
+        for ghost in self.ghosts:
+            if ghost.eaten:
+                continue
+            if pac_rect.colliderect(ghost.rect):
+                if ghost.frightened:
+                    ghost.eat(now, fps)
+                    self.score += self.config.get("points_per_ghost", 200)
+
+    def _collect(self, now=0):
         pac = self.pacman
         gx = int(pac.x // HALF)
         gy = int(pac.y // HALF)
@@ -75,3 +87,6 @@ class Game:
         elif cell in self.maze.super_pacgums:
             self.maze.super_pacgums.discard(cell)
             self.score += self.config.get("points_per_super_pacgum", 50)
+            until = now + FRIGHTENED_DURATION
+            for ghost in self.ghosts:
+                ghost.frighten(until)

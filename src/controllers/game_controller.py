@@ -32,7 +32,7 @@ class GameController:
         while running:
             now = pygame.time.get_ticks()
             running = self.input.handle_events(self.game)
-            self.game.update()
+            self.game.update(now)
             self.view.render(self.game, now)
             self.clock.tick(FPS)
 

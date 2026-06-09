@@ -1,6 +1,10 @@
 import pygame
 from collections import deque
 
+FRIGHTENED_DURATION = 8000   # ms total en mode effrayé
+FRIGHTENED_BLINK    = 2000   # ms avant la fin où le clignotement commence
+EATEN_DURATION      = 5000   # ms que dure l'état eaten (retour au spawn)
+
 _DELTA = {
     "right": ( 1,  0),
     "left":  (-1,  0),
@@ -87,6 +91,13 @@ class Ghost:
         self.direction = direction
         self.color = color
         self.frightened = False
+        self.frightened_until = 0  # timestamp absolu (ms) de fin d'état effrayé
+        self.eaten = False
+        self.eaten_until = 0    # timestamp absolu (ms) de fin d'état eaten
+        self.eaten_speed = speed  # vitesse calculée au moment du eat()
+        self.spawn_x = float(x)
+        self.spawn_y = float(y)
+        self.spawn_direction = direction
 
     @property
     def col(self):
@@ -116,6 +127,31 @@ class Ghost:
         """Case cible du fantôme (par défaut : la case de Pac-Man)."""
         return pacman.col, pacman.row
 
+    def frighten(self, until):
+        """Active le mode effrayé jusqu'au timestamp `until` (ms)."""
+        if not self.eaten:
+            self.frightened = True
+            self.frightened_until = until
+
+    def is_blinking(self, now):
+        """True pendant la phase de clignotement (fin du mode effrayé)."""
+        return self.frightened and now >= self.frightened_until - FRIGHTENED_BLINK
+
+    def compute_spawn_path(self, maze):
+        """Chemin BFS depuis la position courante jusqu'au spawn."""
+        spawn_col = int(self.spawn_x // self._tile)
+        spawn_row = int(self.spawn_y // self._tile)
+        return _bfs(maze, self.col, self.row, _OPPOSITE[self.direction], spawn_col, spawn_row)
+
+    def eat(self, now, fps=60):
+        """Pac-Man mange ce fantôme : il rentre à son spawn en mode 'eaten'."""
+        self.frightened = False
+        self.frightened_until = 0
+        self.eaten = True
+        self.eaten_until = now + EATEN_DURATION
+        self._eaten_fps = fps
+        self.eaten_speed = self.speed  # recalculé à chaque centre de case dans update()
+
     def _clamp_target(self, col, row, maze):
         """Ramène (col, row) dans les bornes valides de la grille de passages."""
         max_col = maze.width  // 2 - 1
@@ -142,7 +178,22 @@ class Ghost:
                 return d
         return opposite  # cul-de-sac : demi-tour en dernier recours
 
-    def update(self, maze, pacman):
+    def update(self, maze, pacman, now=0):
+        # Expiration de l'état effrayé
+        if self.frightened and now > 0 and now >= self.frightened_until:
+            self.frightened = False
+            self.frightened_until = 0
+
+        # Expiration de l'état eaten : snap au spawn et retour à la normale
+        if self.eaten and now > 0 and now >= self.eaten_until:
+            self.eaten = False
+            self.eaten_until = 0
+            self.x = self.spawn_x
+            self.y = self.spawn_y
+            self.direction = self.spawn_direction
+
+        spd = self.eaten_speed if self.eaten else self.speed
+
         dx, dy = _DELTA[self.direction]
         cx, cy = self._tile_center()
 
@@ -158,13 +209,13 @@ class Ghost:
              or (dy > 0 and t_c >= pos) or (dy < 0 and t_c <= pos)
         dist  = abs(t_c - pos)
 
-        if ahead and dist <= self.speed:
+        if ahead and dist <= spd:
             # Snap au centre de case
             if dx:
                 self.x = t_c
             else:
                 self.y = t_c
-            remaining = self.speed - dist
+            remaining = spd - dist
 
             # Décision seulement quand le fantôme peut effectivement bouger.
             # Si remaining == 0 (dist == speed exactement), on reporte à la
@@ -172,7 +223,26 @@ class Ghost:
             # Sans ce garde, deux décisions consécutives depuis le même centre
             # peuvent libérer la direction opposée et provoquer un demi-tour.
             if remaining > 0:
-                target_col, target_row = self._clamp_target(*self._target(pacman), maze)
+                if self.eaten:
+                    spawn_col = int(self.spawn_x // self._tile)
+                    spawn_row = int(self.spawn_y // self._tile)
+                    target_col, target_row = self._clamp_target(spawn_col, spawn_row, maze)
+                    # Recalculer la vitesse à chaque case pour arriver exactement à temps
+                    spawn_path = _bfs(maze, self.col, self.row,
+                                      _OPPOSITE[self.direction], spawn_col, spawn_row)
+                    remaining_steps = len(spawn_path) - 1
+                    remaining_ms = self.eaten_until - now
+                    if remaining_steps > 0 and remaining_ms > 0:
+                        remaining_frames = remaining_ms * self._eaten_fps / 1000
+                        self.eaten_speed = remaining_steps * self._tile / remaining_frames
+                    spd = self.eaten_speed
+                elif self.frightened:
+                    # Fuite : cible symétrique de Pac-Man par rapport au fantôme
+                    flee_col = 2 * self.col - pacman.col
+                    flee_row = 2 * self.row - pacman.row
+                    target_col, target_row = self._clamp_target(flee_col, flee_row, maze)
+                else:
+                    target_col, target_row = self._clamp_target(*self._target(pacman), maze)
                 self.direction = self._choose_direction(maze, target_col, target_row)
                 dx, dy = _DELTA[self.direction]
 
@@ -187,8 +257,8 @@ class Ghost:
                 self.x += dx * remaining
                 self.y += dy * remaining
         else:
-            self.x += dx * self.speed
-            self.y += dy * self.speed
+            self.x += dx * spd
+            self.y += dy * spd
 
 
 class Blinky(Ghost):
