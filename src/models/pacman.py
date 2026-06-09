@@ -120,3 +120,7 @@ class Pacman:
             # Entre deux centres : avance librement (murs déjà vérifiés au dernier centre).
             self.x += dx * self.speed
             self.y += dy * self.speed
+
+        # Sécurité : empêche de sortir de la carte quelle que soit la vitesse.
+        self.x = max(0.0, min(self.x, maze.width  * self.size - 1.0))
+        self.y = max(0.0, min(self.y, maze.height * self.size - 1.0))
