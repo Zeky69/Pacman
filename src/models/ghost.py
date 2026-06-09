@@ -1,3 +1,5 @@
+import random
+
 import pygame
 from collections import deque
 
@@ -178,6 +180,14 @@ class Ghost:
                 return d
         return opposite  # cul-de-sac : demi-tour en dernier recours
 
+    def _choose_random_direction(self, maze):
+        """Direction aléatoire valide à l'intersection (sans demi-tour)."""
+        opposite = _OPPOSITE[self.direction]
+        valid = [d for d in _PRIORITY if d != opposite and self._can_enter(d, maze)]
+        if valid:
+            return random.choice(valid)
+        return opposite  # cul-de-sac : demi-tour contraint
+
     def update(self, maze, pacman, now=0):
         # Expiration de l'état effrayé
         if self.frightened and now > 0 and now >= self.frightened_until:
@@ -236,14 +246,12 @@ class Ghost:
                         remaining_frames = remaining_ms * self._eaten_fps / 1000
                         self.eaten_speed = remaining_steps * self._tile / remaining_frames
                     spd = self.eaten_speed
+                    self.direction = self._choose_direction(maze, target_col, target_row)
                 elif self.frightened:
-                    # Fuite : cible symétrique de Pac-Man par rapport au fantôme
-                    flee_col = 2 * self.col - pacman.col
-                    flee_row = 2 * self.row - pacman.row
-                    target_col, target_row = self._clamp_target(flee_col, flee_row, maze)
+                    self.direction = self._choose_random_direction(maze)
                 else:
                     target_col, target_row = self._clamp_target(*self._target(pacman), maze)
-                self.direction = self._choose_direction(maze, target_col, target_row)
+                    self.direction = self._choose_direction(maze, target_col, target_row)
                 dx, dy = _DELTA[self.direction]
 
                 # Snap perp. pour la nouvelle direction

@@ -17,6 +17,9 @@ _WALL_OFFSET = {
 }
 
 
+DEATH_DURATION = 1500  # ms de gel après la mort avant le respawn
+
+
 class Pacman:
     def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
         self.x = float(x)
@@ -27,6 +30,11 @@ class Pacman:
         self.direction = direction
         self.queued_direction = None
         self.alive = True
+        self.spawn_x = float(x)
+        self.spawn_y = float(y)
+        self.spawn_direction = direction
+        self.dead = False
+        self.dead_until = 0
 
     # ── position dans la grille d'origine ────────────────────────────────────
 
@@ -68,9 +76,25 @@ class Pacman:
         gy = self.row * 2 + drow
         return not maze.is_wall(gx, gy)
 
+    # ── mort / respawn ────────────────────────────────────────────────────────
+
+    def die(self, now):
+        self.dead = True
+        self.dead_until = now + DEATH_DURATION
+
+    def respawn(self):
+        self.x = self.spawn_x
+        self.y = self.spawn_y
+        self.direction = self.spawn_direction
+        self.queued_direction = None
+        self.dead = False
+        self.dead_until = 0
+
     # ── mouvement (style arcade original) ────────────────────────────────────
 
     def update(self, maze):
+        if self.dead:
+            return
         dx, dy = _DELTA[self.direction]
 
         # 1. Demi-tour immédiat (sans attendre le centre de case).

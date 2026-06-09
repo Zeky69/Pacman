@@ -70,13 +70,37 @@ class Game:
     def entities(self):
         return [self.pacman, *self.ghosts]
 
+    @property
+    def game_over(self):
+        return self.lives <= 0 and not self.pacman.dead
+
     def update(self, now=0):
         self._tick_timer(now)
+
+        if self.pacman.dead:
+            if now >= self.pacman.dead_until:
+                self._do_respawn()
+            return  # gel complet pendant la mort
+
         self.pacman.update(self.maze)
         for ghost in self.ghosts:
             ghost.update(self.maze, self.pacman, now)
         self._collect(now)
         self._check_ghost_collisions(now)
+
+    def _do_respawn(self):
+        self.lives -= 1
+        if self.lives <= 0:
+            self.pacman.dead = False  # débloquer la détection de game over
+            return
+        self.pacman.respawn()
+        for ghost in self.ghosts:
+            ghost.eaten = False
+            ghost.frightened = False
+            ghost.frightened_until = 0
+            ghost.x = ghost.spawn_x
+            ghost.y = ghost.spawn_y
+            ghost.direction = ghost.spawn_direction
 
     def _tick_timer(self, now):
         """Accumule le temps écoulé, en clampant les sauts (pause, lag)."""
@@ -97,6 +121,9 @@ class Game:
                 if ghost.frightened:
                     ghost.eat(now, fps)
                     self.score += self.config.get("points_per_ghost", 200)
+                else:
+                    self.pacman.die(now)
+                    return  # une seule mort par frame
 
     def _collect(self, now=0):
         pac = self.pacman

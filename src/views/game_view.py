@@ -103,6 +103,16 @@ class GameView:
     def _animator_for(self, entity, now=0):
         """Renvoie (en le créant au besoin) l'animateur courant de l'entité."""
         if isinstance(entity, Pacman):
+            if entity.dead:
+                # dead_until est unique à chaque mort → animateur remis à zéro automatiquement
+                key = (id(entity), "dead", entity.direction, entity.dead_until)
+                if key not in self._animators:
+                    data = PACMAN_ANIMATIONS[f"death_{entity.direction}"]
+                    palette_index, macro_row = PACMAN_PALETTE
+                    self._animators[key] = Animator(
+                        data, self.sheet, palette_index, macro_row, size=self.tile_px
+                    )
+                return self._animators[key]
             key = (id(entity), entity.direction)
             if key not in self._animators:
                 data = PACMAN_ANIMATIONS[entity.direction]
