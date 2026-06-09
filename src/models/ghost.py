@@ -100,6 +100,7 @@ class Ghost:
         self.spawn_x = float(x)
         self.spawn_y = float(y)
         self.spawn_direction = direction
+        self._pending_reverse = False
 
     @property
     def col(self):
@@ -134,6 +135,7 @@ class Ghost:
         if not self.eaten:
             self.frightened = True
             self.frightened_until = until
+            self._pending_reverse = True
 
     def is_blinking(self, now):
         """True pendant la phase de clignotement (fin du mode effrayé)."""
@@ -248,7 +250,15 @@ class Ghost:
                     spd = self.eaten_speed
                     self.direction = self._choose_direction(maze, target_col, target_row)
                 elif self.frightened:
-                    self.direction = self._choose_random_direction(maze)
+                    if self._pending_reverse:
+                        self._pending_reverse = False
+                        opposite = _OPPOSITE[self.direction]
+                        if self._can_enter(opposite, maze):
+                            self.direction = opposite
+                        else:
+                            self.direction = self._choose_random_direction(maze)
+                    else:
+                        self.direction = self._choose_random_direction(maze)
                 else:
                     target_col, target_row = self._clamp_target(*self._target(pacman), maze)
                     self.direction = self._choose_direction(maze, target_col, target_row)

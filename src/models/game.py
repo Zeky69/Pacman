@@ -55,6 +55,7 @@ class Game:
         ]
         self.score = 0
         self.level = 1
+        self.score_popups = []  # [{x, y, value, until}]
 
         # Timer de niveau (en ms). Le temps n'avance que pendant update() :
         # la pause (qui ne fait pas d'update) gèle donc naturellement le timer.
@@ -76,6 +77,7 @@ class Game:
 
     def update(self, now=0):
         self._tick_timer(now)
+        self.score_popups = [p for p in self.score_popups if p['until'] > now]
 
         if self.pacman.dead:
             if now >= self.pacman.dead_until:
@@ -122,7 +124,12 @@ class Game:
             if ghost.frightened:
                 if pac_rect.colliderect(ghost.rect):
                     ghost.eat(now, fps)
-                    self.score += self.config.get("points_per_ghost", 200)
+                    pts = self.config.get("points_per_ghost", 200)
+                    self.score += pts
+                    self.score_popups.append({
+                        'x': ghost.x, 'y': ghost.y,
+                        'value': pts, 'until': now + 1000,
+                    })
             else:
                 if pac_kill_rect.colliderect(ghost.rect):
                     self.pacman.die(now)

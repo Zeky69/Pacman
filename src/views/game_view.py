@@ -9,7 +9,7 @@ from .sprites import SpriteSheet
 from .maze_view import MazeView
 from .sprite_view import Animator
 from .bitmap_font import BitmapFont
-from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES
+from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES, SCORE_SPRITE
 
 ASSET_PATH = "assets/default.png"
 BACKGROUND = (0, 0, 0)
@@ -89,11 +89,20 @@ class GameView:
 
         self._animators = {}  # cache : (id(entity), direction) -> Animator
 
+        # Sprites de score (mangé un fantôme) pré-scalés à la taille d'une case.
+        score_size = max(8, self.tile_px)
+        self._score_imgs = {}
+        for label, (sc, sr) in SCORE_SPRITE.items():
+            raw = self.sheet.get_large_sprite(0, 0, sc, sr, 1)
+            self._score_imgs[label] = pygame.transform.scale(raw, (score_size, score_size))
+
         # Ressources HUD : police sprite Pac-Man (3 couleurs) + icône de vie.
         hud_s = max(2, self.hud_top // 20)
         self.hud_font = BitmapFont(self.sheet, "white", scale=hud_s)
         self.hud_font_yellow = BitmapFont(self.sheet, "yellow", scale=hud_s)
         self.hud_font_red = BitmapFont(self.sheet, "red", scale=hud_s)
+        # Police réduite pour les popups de score en mode ASCII (valeur non-standard).
+        self.popup_font = BitmapFont(self.sheet, "yellow", scale=max(1, hud_s - 2))
         pac_palette, pac_macro = PACMAN_PALETTE
         life_raw = self.sheet.get_large_sprite(pac_macro, pac_palette, 6, 3, 1)
         life_size = max(12, int(self.hud_bottom * 0.7))
@@ -224,6 +233,18 @@ class GameView:
         pygame.draw.circle(overlay, (255, 184, 81, 180), (px, py), radius_px, 2)
         self.screen.blit(overlay, (0, 0))
 
+    def _draw_score_popups(self, game):
+        """Affiche les popups de score au-dessus de l'endroit où le fantôme a été mangé."""
+        for popup in game.score_popups:
+            label = str(popup['value'])
+            x = self.offset_x + round(popup['x'] * self.model_scale)
+            y = self.offset_y + round(popup['y'] * self.model_scale)
+            if label in self._score_imgs:
+                img = self._score_imgs[label]
+                self.screen.blit(img, img.get_rect(center=(x, y)))
+            else:
+                self.popup_font.draw(self.screen, label, center=(x, y))
+
     def _draw_hud(self, game):
         """Barre du haut (score / level / time) + vies en bas (icônes)."""
         w, h = self.screen.get_size()
@@ -265,9 +286,10 @@ class GameView:
                 sy = self.offset_y + round((gy + 0.5) * self.cell_pitch)
                 self.screen.blit(self._sgom_img, self._sgom_img.get_rect(center=(sx, sy)))
 
-        if DEBUG_SHOW_PATHS:
+        any_frightened = any(g.frightened for g in game.ghosts)
+        if DEBUG_SHOW_PATHS and not any_frightened:
             self._draw_ghost_paths(game)
-        if DEBUG_SHOW_TARGETS:
+        if DEBUG_SHOW_TARGETS and not any_frightened:
             self._draw_ghost_targets(game)
             self._draw_inky_line(game)
             self._draw_clyde_radius(game)
@@ -280,4 +302,5 @@ class GameView:
             y = self.offset_y + round(entity.y * self.model_scale)
             animator.draw(self.screen, x, y)
 
+        self._draw_score_popups(game)
         self._draw_hud(game)
