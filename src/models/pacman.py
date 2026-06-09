@@ -94,7 +94,7 @@ class Pacman:
     # ── mouvement (style arcade original) ────────────────────────────────────
 
     def update(self, maze):
-        self.cells_visited = []
+        self.cells_visited = [(self.x, self.y)]  # position de départ du frame
         if self.dead:
             return
         dx, dy = _DELTA[self.direction]

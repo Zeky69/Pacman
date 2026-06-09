@@ -31,10 +31,12 @@ DEFAULTS = {
     "seed": 42,
     "level_max_time": 90,
     "pacman_speed": 1.0,
-    "ghost_speed": 1.0
+    "ghost_speed": 1.0,
+    "godmode": False,
 }
 
 # Catégories de validation.
+_BOOL_KEYS   = ("godmode",)
 _STRING_KEYS = ("highscore_filename",)
 # Entier >= 0 toléré (un score nul ou une graine 0 sont valides).
 _NON_NEGATIVE_INT_KEYS = (
@@ -68,6 +70,8 @@ def _validate(key, value):
     En Python ``bool`` est un sous-type de ``int`` : on le refuse
     explicitement pour éviter qu'un ``true`` ne passe pour un entier.
     """
+    if key in _BOOL_KEYS:
+        return value if isinstance(value, bool) else None
     if isinstance(value, bool):
         return None
     if key in _STRING_KEYS:

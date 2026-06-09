@@ -268,6 +268,7 @@ class GameView:
             rect = self._life_icon.get_rect(midleft=(x, y))
             self.screen.blit(self._life_icon, rect)
 
+
     def render(self, game, now):
         """Dessine une frame complète à partir de l'état du jeu."""
         self.screen.fill(BACKGROUND)
@@ -297,10 +298,14 @@ class GameView:
         for entity in game.entities():
             animator = self._animator_for(entity, now)
             animator.update(now)
-            # Pixel-modèle -> pixel-écran (mouvement continu, sub-case).
             x = self.offset_x + round(entity.x * self.model_scale)
             y = self.offset_y + round(entity.y * self.model_scale)
-            animator.draw(self.screen, x, y)
+            if isinstance(entity, Pacman) and game.godmode:
+                img = animator.image.copy()
+                img.set_alpha(130)
+                self.screen.blit(img, img.get_rect(center=(x, y)))
+            else:
+                animator.draw(self.screen, x, y)
 
         self._draw_score_popups(game)
         self._draw_hud(game)

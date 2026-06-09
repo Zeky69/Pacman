@@ -56,6 +56,7 @@ class Game:
         self.score = 0
         self.level = 1
         self.score_popups = []  # [{x, y, value, until}]
+        self.godmode = bool(config.get("godmode", False))
 
         # Timer de niveau (en ms). Le temps n'avance que pendant update() :
         # la pause (qui ne fait pas d'update) gèle donc naturellement le timer.
@@ -152,7 +153,7 @@ class Game:
                             'value': pts, 'until': now + 1000,
                         })
                 else:
-                    if pac_kill_rect.colliderect(ghost.rect):
+                    if not self.godmode and pac_kill_rect.colliderect(ghost.rect):
                         self.pacman.die(now)
                         return  # une seule mort par frame
 

@@ -28,6 +28,9 @@ class InputController:
                 continue
             if event.key == pygame.K_ESCAPE:
                 return "pause"
+            if event.key == pygame.K_g:
+                game.godmode = not game.godmode
+                continue
             direction = KEY_TO_DIRECTION.get(event.key)
             if direction:
                 game.pacman.queued_direction = direction
