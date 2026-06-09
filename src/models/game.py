@@ -114,14 +114,17 @@ class Game:
     def _check_ghost_collisions(self, now):
         fps = self.config.get("fps", 60)
         pac_rect = self.pacman.rect
+        # Hitbox réduite (50 %) pour être tué — plus indulgente que la hitbox normale
+        pac_kill_rect = pac_rect.inflate(-self.pacman.size // 2, -self.pacman.size // 2)
         for ghost in self.ghosts:
             if ghost.eaten:
                 continue
-            if pac_rect.colliderect(ghost.rect):
-                if ghost.frightened:
+            if ghost.frightened:
+                if pac_rect.colliderect(ghost.rect):
                     ghost.eat(now, fps)
                     self.score += self.config.get("points_per_ghost", 200)
-                else:
+            else:
+                if pac_kill_rect.colliderect(ghost.rect):
                     self.pacman.die(now)
                     return  # une seule mort par frame
 
