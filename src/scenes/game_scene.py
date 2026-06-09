@@ -22,7 +22,7 @@ class GameScene(Scene):
             self.app.change_scene(PauseScene(self.app, self))
 
     def update(self, now):
-        self.game.update()
+        self.game.update(now)
 
     def draw(self, screen, now):
         self.view.render(self.game, now)

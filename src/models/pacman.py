@@ -79,48 +79,62 @@ class Pacman:
             if (dx and qdx == -dx) or (dy and qdy == -dy):
                 self.direction = self.queued_direction
                 self.queued_direction = None
-                dx, dy = qdx, qdy
 
-        # 2. Snap dur sur l'axe perpendiculaire (jamais de dérive de couloir).
-        cx, cy = self._tile_center()
-        if dx:
-            self.y = cy
-        else:
-            self.x = cx
+        # 2. Déplacement par étapes d'une case max : on s'arrête à chaque centre
+        #    pour vérifier les murs — empêche de les traverser à grande vitesse.
+        budget = self.speed
+        while budget > 0:
+            dx, dy = _DELTA[self.direction]
+            cx, cy = self._tile_center()
 
-        # 3. Distance au prochain centre de case dans la direction courante.
-        pos   = self.x if dx else self.y
-        t_c   = cx     if dx else cy
-        ahead = (dx > 0 and t_c >= pos) or (dx < 0 and t_c <= pos) \
-             or (dy > 0 and t_c >= pos) or (dy < 0 and t_c <= pos)
-        dist  = abs(t_c - pos)
+            # Snap dur sur l'axe perpendiculaire (jamais de dérive de couloir).
+            if dx:
+                self.y = cy
+            else:
+                self.x = cx
 
-        if ahead and dist <= self.speed:
-            # Snap au centre, calcule le budget restant.
-            if dx: self.x = t_c
-            else:  self.y = t_c
-            remaining = self.speed - dist
+            pos   = self.x if dx else self.y
+            t_c   = cx     if dx else cy
+            ahead = (dx > 0 and t_c >= pos) or (dx < 0 and t_c <= pos) \
+                 or (dy > 0 and t_c >= pos) or (dy < 0 and t_c <= pos)
+            dist  = abs(t_c - pos)
 
-            # Tente le changement de direction au centre.
-            if self.queued_direction and self._can_enter(self.queued_direction, maze):
-                self.direction = self.queued_direction
-                self.queued_direction = None
-                dx, dy = _DELTA[self.direction]
-                # Snap perp. pour la nouvelle direction.
-                cx, cy = self._tile_center()
-                if dx: self.y = cy
-                else:  self.x = cx
+            if ahead and dist <= budget:
+                # Snap au centre de case.
+                if dx:
+                    self.x = t_c
+                else:
+                    self.y = t_c
+                budget -= dist
 
-            # Avance du budget restant si le chemin est libre.
-            if self._can_enter(self.direction, maze):
-                self.x += dx * remaining
-                self.y += dy * remaining
-            # sinon : Pac-Man s'arrête exactement au centre.
-        else:
-            # Entre deux centres : avance librement (murs déjà vérifiés au dernier centre).
-            self.x += dx * self.speed
-            self.y += dy * self.speed
+                if budget > 0:
+                    # Tentative de changement de direction au centre.
+                    if self.queued_direction and self._can_enter(self.queued_direction, maze):
+                        self.direction = self.queued_direction
+                        self.queued_direction = None
 
-        # Sécurité : empêche de sortir de la carte quelle que soit la vitesse.
+                    dx, dy = _DELTA[self.direction]
+                    cx, cy = self._tile_center()
+                    if dx:
+                        self.y = cy
+                    else:
+                        self.x = cx
+
+                    if self._can_enter(self.direction, maze):
+                        # Avancer d'au plus une case pour ne pas sauter de mur.
+                        step = min(budget, float(self._tile))
+                        self.x += dx * step
+                        self.y += dy * step
+                        budget -= step
+                    else:
+                        budget = 0  # bloqué : Pac-Man s'arrête au centre.
+            else:
+                # Entre deux centres : avancer librement
+                # (mur déjà vérifié au dernier centre).
+                self.x += dx * budget
+                self.y += dy * budget
+                budget = 0
+
+        # 3. Sécurité : empêche de sortir de la carte quelle que soit la vitesse.
         self.x = max(0.0, min(self.x, maze.width  * self.size - 1.0))
         self.y = max(0.0, min(self.y, maze.height * self.size - 1.0))
