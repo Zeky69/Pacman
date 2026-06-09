@@ -1,0 +1,28 @@
+"""Scène de jeu : enveloppe le modèle Game et sa vue."""
+
+from .scene import Scene
+from ..models.game import Game
+from ..views.game_view import GameView
+from ..controllers.input_controller import InputController
+
+
+class GameScene(Scene):
+    """Fait tourner une partie (modèle + vue + entrées clavier)."""
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.game = Game(app.config)
+        self.view = GameView(app.screen, self.game.maze)
+        self.input = InputController()
+
+    def handle_events(self, events, now):
+        action = self.input.apply(events, self.game)
+        if action == "pause":
+            from .pause_scene import PauseScene
+            self.app.change_scene(PauseScene(self.app, self))
+
+    def update(self, now):
+        self.game.update()
+
+    def draw(self, screen, now):
+        self.view.render(self.game, now)
