@@ -35,6 +35,7 @@ class Pacman:
         self.spawn_direction = direction
         self.dead = False
         self.dead_until = 0
+        self.moved = False
         self.cells_visited = []  # positions (x, y) franchies ce frame, dans l'ordre
 
     # ── position dans la grille d'origine ────────────────────────────────────
@@ -94,8 +95,10 @@ class Pacman:
     # ── mouvement (style arcade original) ────────────────────────────────────
 
     def update(self, maze):
+        start_x, start_y = self.x, self.y
         self.cells_visited = [(self.x, self.y)]  # position de départ du frame
         if self.dead:
+            self.moved = False
             return
         dx, dy = _DELTA[self.direction]
 
@@ -172,3 +175,5 @@ class Pacman:
         # Position finale toujours présente.
         if not self.cells_visited or self.cells_visited[-1] != (self.x, self.y):
             self.cells_visited.append((self.x, self.y))
+
+        self.moved = (self.x != start_x or self.y != start_y)

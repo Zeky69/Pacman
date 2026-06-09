@@ -297,7 +297,11 @@ class GameView:
 
         for entity in game.entities():
             animator = self._animator_for(entity, now)
-            animator.update(now)
+            if isinstance(entity, Pacman) and not entity.dead and not entity.moved:
+                animator.index = 1
+                animator.image = animator.frames[1]
+            else:
+                animator.update(now)
             x = self.offset_x + round(entity.x * self.model_scale)
             y = self.offset_y + round(entity.y * self.model_scale)
             if isinstance(entity, Pacman) and game.godmode:
