@@ -2,5 +2,7 @@
 	"width": 10,
 	"height": 10,
 	"pacman_speed": 0.8,
-	"ghost_speed": 0.5
-}
+	"ghost_speed": 0.5,
+	"lives": 3
+} 
+#leldl

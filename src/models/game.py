@@ -20,7 +20,14 @@ class Game:
 
     def __init__(self, config):
         self.config = config
-        self.maze = Maze(cols=config["width"], rows=config["height"])
+        # seed depuis la config ; PERFECT=False -> couloirs Pac-Man.
+        self.maze = Maze(
+            cols=config["width"],
+            rows=config["height"],
+            seed=config.get("seed", 42),
+            perfect=False,
+        )
+        self.lives = config.get("lives", 3)
 
         # Pré-calcul des rectangles de murs (grille doublée → pixels-modèle).
         self.maze.wall_rects = [

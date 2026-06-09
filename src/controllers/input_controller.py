@@ -7,6 +7,11 @@ KEY_TO_DIRECTION = {
     pygame.K_LEFT: "left",
     pygame.K_UP: "up",
     pygame.K_DOWN: "down",
+    # WASD (claviers QWERTY) en plus des flèches.
+    pygame.K_d: "right",
+    pygame.K_a: "left",
+    pygame.K_w: "up",
+    pygame.K_s: "down",
 }
 
 
