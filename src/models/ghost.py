@@ -215,13 +215,18 @@ class Ghost:
         else:
             self.x = cx
 
-        pos   = self.x if dx else self.y
-        t_c   = cx     if dx else cy
-        ahead = (dx > 0 and t_c >= pos) or (dx < 0 and t_c <= pos) \
-             or (dy > 0 and t_c >= pos) or (dy < 0 and t_c <= pos)
-        dist  = abs(t_c - pos)
+        pos = self.x if dx else self.y
+        t_c = cx     if dx else cy
 
-        if ahead and dist <= spd:
+        # Prochain centre devant : corriger si on a déjà dépassé le centre courant.
+        d = dx + dy
+        if d > 0 and pos > t_c + 1e-6:
+            t_c += self._tile
+        elif d < 0 and pos < t_c - 1e-6:
+            t_c -= self._tile
+        dist = abs(t_c - pos)
+
+        if dist <= spd:
             # Snap au centre de case
             if dx:
                 self.x = t_c
@@ -277,6 +282,10 @@ class Ghost:
         else:
             self.x += dx * spd
             self.y += dy * spd
+
+        # Sécurité : empêche de sortir de la carte.
+        self.x = max(0.0, min(self.x, maze.width  * self.size - 1.0))
+        self.y = max(0.0, min(self.y, maze.height * self.size - 1.0))
 
 
 class Blinky(Ghost):

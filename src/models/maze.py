@@ -102,7 +102,7 @@ class Maze:
         """True si la case (gx, gy) est un mur (hors-grille = mur)."""
         if 0 <= gx < self.width and 0 <= gy < self.height:
             return self.grid[gy][gx] == 1
-        return False
+        return True
 
     def corner_mask(self, cx, cy):
         """Masque 4 bits des murs autour du coin (cx, cy) : NW NE SW SE."""
