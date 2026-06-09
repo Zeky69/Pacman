@@ -1,9 +1,9 @@
 import pygame
 from collections import deque
 
-FRIGHTENED_DURATION = 8000   # ms total en mode effrayé
-FRIGHTENED_BLINK    = 2000   # ms avant la fin où le clignotement commence
-EATEN_DURATION      = 5000   # ms que dure l'état eaten (retour au spawn)
+FRIGHTENED_DURATION = 5000   # ms total en mode effrayé
+FRIGHTENED_BLINK    = 1500   # ms avant la fin où le clignotement commence
+EATEN_DURATION      = 3000   # ms que dure l'état eaten (retour au spawn)
 
 _DELTA = {
     "right": ( 1,  0),
