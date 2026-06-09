@@ -35,6 +35,7 @@ class Pacman:
         self.spawn_direction = direction
         self.dead = False
         self.dead_until = 0
+        self.cells_visited = []  # positions (x, y) franchies ce frame, dans l'ordre
 
     # ── position dans la grille d'origine ────────────────────────────────────
 
@@ -93,6 +94,7 @@ class Pacman:
     # ── mouvement (style arcade original) ────────────────────────────────────
 
     def update(self, maze):
+        self.cells_visited = []
         if self.dead:
             return
         dx, dy = _DELTA[self.direction]
@@ -104,32 +106,38 @@ class Pacman:
                 self.direction = self.queued_direction
                 self.queued_direction = None
 
-        # 2. Déplacement par étapes d'une case max : on s'arrête à chaque centre
-        #    pour vérifier les murs — empêche de les traverser à grande vitesse.
+        # 2. Déplacement case par case : on s'arrête TOUJOURS au prochain centre
+        #    devant nous, qu'on soit avant ou après le centre de la case courante.
         budget = self.speed
         while budget > 0:
             dx, dy = _DELTA[self.direction]
             cx, cy = self._tile_center()
 
-            # Snap dur sur l'axe perpendiculaire (jamais de dérive de couloir).
+            # Snap sur l'axe perpendiculaire.
             if dx:
                 self.y = cy
             else:
                 self.x = cx
 
-            pos   = self.x if dx else self.y
-            t_c   = cx     if dx else cy
-            ahead = (dx > 0 and t_c >= pos) or (dx < 0 and t_c <= pos) \
-                 or (dy > 0 and t_c >= pos) or (dy < 0 and t_c <= pos)
-            dist  = abs(t_c - pos)
+            # Prochain centre devant : si on a déjà dépassé le centre de la case
+            # courante, viser le centre de la case suivante dans notre direction.
+            pos = self.x if dx else self.y
+            t_c = cx     if dx else cy
+            d   = dx + dy  # ±1
+            if d > 0 and pos > t_c + 1e-6:
+                t_c += self._tile
+            elif d < 0 and pos < t_c - 1e-6:
+                t_c -= self._tile
+            dist = abs(t_c - pos)
 
-            if ahead and dist <= budget:
-                # Snap au centre de case.
+            if dist <= budget:
+                # Snap au prochain centre.
                 if dx:
                     self.x = t_c
                 else:
                     self.y = t_c
                 budget -= dist
+                self.cells_visited.append((self.x, self.y))
 
                 if budget > 0:
                     # Tentative de changement de direction au centre.
@@ -145,20 +153,22 @@ class Pacman:
                         self.x = cx
 
                     if self._can_enter(self.direction, maze):
-                        # Avancer d'au plus une case pour ne pas sauter de mur.
                         step = min(budget, float(self._tile))
                         self.x += dx * step
                         self.y += dy * step
                         budget -= step
                     else:
-                        budget = 0  # bloqué : Pac-Man s'arrête au centre.
+                        budget = 0  # bloqué.
             else:
-                # Entre deux centres : avancer librement
-                # (mur déjà vérifié au dernier centre).
+                # Budget insuffisant pour atteindre le prochain centre.
                 self.x += dx * budget
                 self.y += dy * budget
                 budget = 0
 
-        # 3. Sécurité : empêche de sortir de la carte quelle que soit la vitesse.
+        # 3. Sécurité : empêche de sortir de la carte.
         self.x = max(0.0, min(self.x, maze.width  * self.size - 1.0))
         self.y = max(0.0, min(self.y, maze.height * self.size - 1.0))
+
+        # Position finale toujours présente.
+        if not self.cells_visited or self.cells_visited[-1] != (self.x, self.y):
+            self.cells_visited.append((self.x, self.y))

@@ -115,31 +115,48 @@ class Game:
 
     def _check_ghost_collisions(self, now):
         fps = self.config.get("fps", 60)
-        pac_rect = self.pacman.rect
-        # Hitbox réduite (50 %) pour être tué — plus indulgente que la hitbox normale
-        pac_kill_rect = pac_rect.inflate(-self.pacman.size // 2, -self.pacman.size // 2)
-        for ghost in self.ghosts:
-            if ghost.eaten:
-                continue
-            if ghost.frightened:
-                if pac_rect.colliderect(ghost.rect):
-                    ghost.eat(now, fps)
-                    pts = self.config.get("points_per_ghost", 200)
-                    self.score += pts
-                    self.score_popups.append({
-                        'x': ghost.x, 'y': ghost.y,
-                        'value': pts, 'until': now + 1000,
-                    })
-            else:
-                if pac_kill_rect.colliderect(ghost.rect):
-                    self.pacman.die(now)
-                    return  # une seule mort par frame
+        size = self.pacman.size
+        h = size // 2
 
-    def _collect(self, now=0):
-        pac = self.pacman
-        gx = int(pac.x // HALF)
-        gy = int(pac.y // HALF)
-        cell = (gx, gy)
+        # Construire la liste complète des positions pixel à tester :
+        # snap points + toutes les cases de la grille doublée entre eux.
+        check_px = []
+        positions = self.pacman.cells_visited
+        for i, (px, py) in enumerate(positions):
+            gx = int(px // HALF)
+            gy = int(py // HALF)
+            if i > 0:
+                pgx = int(positions[i - 1][0] // HALF)
+                pgy = int(positions[i - 1][1] // HALF)
+                if pgx != gx:
+                    for cx in range(min(pgx, gx), max(pgx, gx) + 1):
+                        check_px.append(((cx + 0.5) * HALF, py))
+                elif pgy != gy:
+                    for cy in range(min(pgy, gy), max(pgy, gy) + 1):
+                        check_px.append((px, (cy + 0.5) * HALF))
+            check_px.append((px, py))
+
+        for px, py in check_px:
+            pac_rect      = pygame.Rect(int(px) - h, int(py) - h, size, size)
+            pac_kill_rect = pac_rect.inflate(-h, -h)
+            for ghost in self.ghosts:
+                if ghost.eaten:
+                    continue
+                if ghost.frightened:
+                    if pac_rect.colliderect(ghost.rect):
+                        ghost.eat(now, fps)
+                        pts = self.config.get("points_per_ghost", 200)
+                        self.score += pts
+                        self.score_popups.append({
+                            'x': ghost.x, 'y': ghost.y,
+                            'value': pts, 'until': now + 1000,
+                        })
+                else:
+                    if pac_kill_rect.colliderect(ghost.rect):
+                        self.pacman.die(now)
+                        return  # une seule mort par frame
+
+    def _try_collect(self, cell, now):
         if cell in self.maze.pacgums:
             self.maze.pacgums.discard(cell)
             self.score += self.config.get("points_per_pacgum", 10)
@@ -149,3 +166,31 @@ class Game:
             until = now + FRIGHTENED_DURATION
             for ghost in self.ghosts:
                 ghost.frighten(until)
+
+    def _collect(self, now=0):
+        # Itérer TOUTES les cases de la grille doublée traversées ce frame,
+        # y compris les cases de passage (gx/gy pairs) entre deux centres.
+        seen = set()
+        positions = self.pacman.cells_visited
+        for i, (px, py) in enumerate(positions):
+            gx = int(px // HALF)
+            gy = int(py // HALF)
+            if i > 0:
+                pgx = int(positions[i - 1][0] // HALF)
+                pgy = int(positions[i - 1][1] // HALF)
+                if pgx != gx:  # déplacement horizontal : interpoler gx
+                    for cx in range(min(pgx, gx), max(pgx, gx) + 1):
+                        cell = (cx, gy)
+                        if cell not in seen:
+                            seen.add(cell)
+                            self._try_collect(cell, now)
+                elif pgy != gy:  # déplacement vertical : interpoler gy
+                    for cy in range(min(pgy, gy), max(pgy, gy) + 1):
+                        cell = (gx, cy)
+                        if cell not in seen:
+                            seen.add(cell)
+                            self._try_collect(cell, now)
+            cell = (gx, gy)
+            if cell not in seen:
+                seen.add(cell)
+                self._try_collect(cell, now)
