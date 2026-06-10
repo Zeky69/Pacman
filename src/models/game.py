@@ -14,8 +14,8 @@ HALF    = TILE_PX // 2  # cellule de la grille doublée = hitbox des entités
 # Nombre de niveaux à enchaîner avant la victoire finale. Modifiable ici, ou
 # surchargé par la clé "level_count" de config.json.
 DEFAULT_LEVEL_COUNT = 5
-# Accélération des fantômes par niveau (+10 % de vitesse à chaque palier).
 GHOST_SPEEDUP_PER_LEVEL = 0.1
+READY_MS = 2000
 
 
 def _center(col, row):
@@ -36,6 +36,8 @@ class Game:
         self.invincible = bool(config.get("invincible", False))
         self.ghost_freeze = False
         self.speed_boost = False
+        self.show_paths = False
+        self.show_targets = False
 
         # Vitesses de base ; les fantômes accélèrent à chaque niveau.
         self._pacman_speed = config.get("pacman_speed", 1.0)
@@ -50,6 +52,8 @@ class Game:
         self.max_time = config.get("level_max_time", 90)
         self.elapsed_ms = 0
         self._last_now = None
+        self.ready = True
+        self._ready_until = None
 
     def _ghost_speed(self):
         """Vitesse des fantômes au niveau courant (accélère par palier)."""
@@ -82,8 +86,9 @@ class Game:
         """(Re)place Pac-Man et les fantômes à leurs positions de départ."""
         config = self.config
         pac_col = config["width"] // 2 - (1 if config["width"] % 2 == 0 else 0)
+        effective_speed = self._pacman_speed * (2.5 if self.speed_boost else 1.0)
         self.pacman = Pacman(*_center(pac_col, config["height"] // 2),
-                             speed=self._pacman_speed)
+                             speed=effective_speed)
 
         gs = self._ghost_speed()
         cx, cy = config["width"] - 1, config["height"] - 1
@@ -113,6 +118,8 @@ class Game:
         self.score_popups = []
         self.elapsed_ms = 0
         self._last_now = now
+        self.ready = True
+        self._ready_until = None
 
     @property
     def time_remaining(self):
@@ -137,6 +144,13 @@ class Game:
         return self.level_cleared and self.level >= self.max_level
 
     def update(self, now=0):
+        if self.ready:
+            if self._ready_until is None:
+                self._ready_until = now + READY_MS
+            if now < self._ready_until:
+                return
+            self.ready = False
+
         self._tick_timer(now)
         self.score_popups = [p for p in self.score_popups if p['until'] > now]
 
@@ -144,6 +158,10 @@ class Game:
             if now >= self.pacman.dead_until:
                 self._do_respawn()
             return  # gel complet pendant la mort
+
+        if self.elapsed_ms >= self.max_time * 1000:
+            self.pacman.die(now)
+            return
 
         self.pacman.update(self.maze)
         if not self.ghost_freeze:
@@ -160,6 +178,8 @@ class Game:
 
     def _do_respawn(self):
         self.lives -= 1
+        self.elapsed_ms = 0
+        self._last_now = None
         if self.lives <= 0:
             self.pacman.dead = False  # débloquer la détection de game over
             return
@@ -171,6 +191,8 @@ class Game:
             ghost.x = ghost.spawn_x
             ghost.y = ghost.spawn_y
             ghost.direction = ghost.spawn_direction
+        self.ready = True
+        self._ready_until = None
 
     def _tick_timer(self, now):
         """Accumule le temps écoulé, en clampant les sauts (pause, lag)."""

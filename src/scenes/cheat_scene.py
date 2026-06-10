@@ -16,6 +16,8 @@ _ITEMS = [
     ("INVINCIBLE",  "toggle", "invincible"),
     ("FREEZE",      "toggle", "ghost_freeze"),
     ("SPEED BOOST", "toggle", "speed_boost"),
+    ("PATHS",       "toggle", "show_paths"),
+    ("TARGETS",     "toggle", "show_targets"),
     ("+1 LIFE",     "action", None),
     ("SKIP LEVEL",  "action", None),
     ("RESUME",      "back",   None),
