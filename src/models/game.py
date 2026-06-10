@@ -57,6 +57,9 @@ class Game:
         self.level = 1
         self.score_popups = []  # [{x, y, value, until}]
         self.godmode = bool(config.get("godmode", False))
+        self.ghost_freeze = False
+        self.speed_boost = False
+        self._base_pacman_speed = pacman_speed
 
         # Timer de niveau (en ms). Le temps n'avance que pendant update() :
         # la pause (qui ne fait pas d'update) gèle donc naturellement le timer.
@@ -86,8 +89,9 @@ class Game:
             return  # gel complet pendant la mort
 
         self.pacman.update(self.maze)
-        for ghost in self.ghosts:
-            ghost.update(self.maze, self.pacman, now)
+        if not self.ghost_freeze:
+            for ghost in self.ghosts:
+                ghost.update(self.maze, self.pacman, now)
         self._collect(now)
         self._check_ghost_collisions(now)
 

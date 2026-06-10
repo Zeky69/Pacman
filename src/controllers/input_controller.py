@@ -31,6 +31,17 @@ class InputController:
             if event.key == pygame.K_g:
                 game.godmode = not game.godmode
                 continue
+            if event.key == pygame.K_f:
+                game.ghost_freeze = not game.ghost_freeze
+                continue
+            if event.key == pygame.K_l:
+                game.lives += 1
+                continue
+            if event.key == pygame.K_v:
+                game.speed_boost = not game.speed_boost
+                boost = 2.5 if game.speed_boost else 1.0
+                game.pacman.speed = game._base_pacman_speed * boost
+                continue
             direction = KEY_TO_DIRECTION.get(event.key)
             if direction:
                 game.pacman.queued_direction = direction
