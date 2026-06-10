@@ -96,8 +96,8 @@ def _normalize(data: dict[str, Any]) -> dict[str, Any]:
             continue
         valid = _validate(key, data[key])
         if valid is None:
-            print(f"Config : valeur invalide pour '{key}' "
-                  f"({data[key]!r}) — défaut {default!r} utilisé.",
+            print(f"Config: invalid value for '{key}' "
+                  f"({data[key]!r}) — using default {default!r}.",
                   file=sys.stderr)
         else:
             config[key] = valid
@@ -115,16 +115,15 @@ def load_config(path: str = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
         with open(path, encoding="utf-8") as f:
             raw = f.read()
     except OSError as e:
-        sys.exit(f"Erreur : impossible de lire la configuration '{path}' "
-                 f"({e}).")
+        sys.exit(f"Error: cannot read configuration file '{path}' ({e}).")
 
     try:
         data = json.loads(_strip_comments(raw))
     except json.JSONDecodeError as e:
-        sys.exit(f"Erreur : '{path}' n'est pas un JSON valide ({e}).")
+        sys.exit(f"Error: '{path}' is not valid JSON ({e}).")
 
     if not isinstance(data, dict):
-        sys.exit(f"Erreur : '{path}' doit contenir un objet JSON "
-                 f"(ex: {{\"width\": 20, \"height\": 20}}).")
+        sys.exit(f"Error: '{path}' must contain a JSON object "
+                 f"(e.g. {{\"width\": 20, \"height\": 20}}).")
 
     return _normalize(data)

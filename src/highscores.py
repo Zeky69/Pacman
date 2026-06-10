@@ -67,7 +67,7 @@ def save_highscore(path: str, name: str, score: int, limit: int = 100) -> list[t
     Le fichier est lu, fusionné avec la nouvelle entrée, trié par score
     décroissant puis tronqué à `limit`. Renvoie la liste résultante.
     """
-    name = (name or "").strip().upper()[:12] or "???"
+    name = (name or "").strip().upper()[:10] or "???"
     entries = _normalize(_read(path))
     entries.append((name, int(score)))
     entries.sort(key=lambda e: e[1], reverse=True)

@@ -6,7 +6,7 @@ from collections import deque
 
 FRIGHTENED_DURATION = 5000
 FRIGHTENED_BLINK = 1500
-EATEN_DURATION = 3000
+EATEN_DURATION = 5000
 
 _DELTA = {
     "right": (1, 0),

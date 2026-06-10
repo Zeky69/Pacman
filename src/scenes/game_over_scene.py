@@ -15,9 +15,9 @@ from ..highscores import save_highscore
 
 BACKGROUND = (0, 0, 0)
 CURSOR_COLOR = (255, 221, 0)
-MAX_NAME = 12
+MAX_NAME = 10
 # Caractères saisissables (présents dans la police bitmap).
-ALLOWED = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+ALLOWED = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
 
 
 class GameOverScene(Scene):
