@@ -7,6 +7,7 @@ puis on choisit la tuile à dessiner via les tables de correspondance.
 import pygame
 
 from .settings import MAZE_TILE, COLORS, BORDER_MAPS, CORNER_MAP
+from .sprites import FALLBACK_CORNER_MAP, FALLBACK_BORDER_MAPS
 
 
 class MazeView:
@@ -20,13 +21,19 @@ class MazeView:
             name: sheet.get_small_sprite(macro_row, palette_index, coords[0], coords[1], scale)
             for name, coords in MAZE_TILE.items()
         }
+        if getattr(sheet, "_fallback", False):
+            self._corner_map  = FALLBACK_CORNER_MAP
+            self._border_maps = FALLBACK_BORDER_MAPS
+        else:
+            self._corner_map  = CORNER_MAP
+            self._border_maps = BORDER_MAPS
 
     def _active_map(self, maze, cx, cy):
         """Table de tuiles applicable à ce coin (None hors limites)."""
         if cx == 0 or cx == maze.width or cy == 0 or cy == maze.height:
             return None
         border = maze.border_type(cx, cy)
-        return BORDER_MAPS[border] if border else CORNER_MAP
+        return self._border_maps[border] if border else self._corner_map
 
     def draw(self, surface, maze, offset_x=0, offset_y=0):
         """Dessine tout le labyrinthe sur `surface`."""
