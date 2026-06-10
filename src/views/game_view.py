@@ -53,17 +53,15 @@ class GameView:
         ))
         self.maze_view = MazeView(self.sheet, scale=self.scale)
 
-        # 2. Pré-rendu du labyrinthe (statique) sur sa propre surface.
+        # 2-3. Ratio d'ajustement (les dimensions du labyrinthe sont constantes
+        # d'un niveau à l'autre) puis pré-rendu du labyrinthe. Le pré-rendu est
+        # isolé dans _rebuild_maze_surface : il doit être refait à chaque
+        # changement de niveau, car la disposition des murs change.
         tile = self.maze_view.tile_size
         maze_w, maze_h = maze.width * tile, maze.height * tile
-        base_surface = pygame.Surface((maze_w, maze_h))
-        self.maze_view.draw(base_surface, maze, 0, 0)
-
-        # 3. Redimensionnement flottant dans la zone de jeu (ratio gardé).
         self.fit = min(screen_w / maze_w, avail_h / maze_h)
-        self.maze_surface = pygame.transform.scale(
-            base_surface, (round(maze_w * self.fit), round(maze_h * self.fit))
-        )
+        self._maze = None
+        self._rebuild_maze_surface(maze)
 
         # 4. Centrage : horizontal sur l'écran, vertical entre les bandes HUD.
         self.offset_x = (screen_w - self.maze_surface.get_width()) // 2
@@ -108,6 +106,24 @@ class GameView:
         life_size = max(12, int(self.hud_bottom * 0.7))
         self._life_icon = pygame.transform.scale(
             life_raw, (life_size, life_size))
+
+    def _rebuild_maze_surface(self, maze):
+        """(Re)génère le fond pré-rendu du labyrinthe pour `maze`.
+
+        Appelée à l'init et à chaque changement de niveau : comme la
+        disposition des murs change, le fond statique doit être redessiné,
+        sinon on continue de voir l'ancien tableau (et on « traverse » les
+        nouveaux murs). On garde une référence sur `maze` pour détecter le
+        changement par identité d'objet.
+        """
+        tile = self.maze_view.tile_size
+        maze_w, maze_h = maze.width * tile, maze.height * tile
+        base_surface = pygame.Surface((maze_w, maze_h))
+        self.maze_view.draw(base_surface, maze, 0, 0)
+        self.maze_surface = pygame.transform.scale(
+            base_surface, (round(maze_w * self.fit), round(maze_h * self.fit))
+        )
+        self._maze = maze
 
     def _animator_for(self, entity, now=0):
         """Renvoie (en le créant au besoin) l'animateur courant de l'entité."""
@@ -271,6 +287,14 @@ class GameView:
 
     def render(self, game, now):
         """Dessine une frame complète à partir de l'état du jeu."""
+        # Changement de niveau (nouveau labyrinthe) : re-rendre le fond et
+        # purger le cache d'animateurs. Les entités ont été recréées et leurs
+        # id() peuvent être réutilisés : sans purge, un fantôme pourrait hériter
+        # de l'animateur Pac-Man d'un id recyclé (-> « second Pac-Man »).
+        if game.maze is not self._maze:
+            self._rebuild_maze_surface(game.maze)
+            self._animators.clear()
+
         self.screen.fill(BACKGROUND)
         self.screen.blit(self.maze_surface, (self.offset_x, self.offset_y))
 
