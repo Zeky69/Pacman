@@ -1,0 +1,281 @@
+*This project has been created as part of the 42 curriculum by zakburak, elsahin.*
+
+# Pac-Man
+
+## Description
+
+A complete, playable Pac-Man game written in Python using Pygame. The game faithfully recreates the classic 1980 Namco arcade experience: Pac-Man navigating a maze, eating pacgums, avoiding ghosts, and collecting power pellets to turn the tables. It features procedurally generated mazes (via an external maze generator package), a persistent highscore system, a cheat menu for evaluation, and a polished fullscreen UI with menu, game, pause, win, and game-over screens.
+
+The project is structured around an MVC pattern (models / views / controllers / scenes) and follows the flake8 + mypy coding standard required by the subject.
+
+## Instructions
+
+### Requirements
+
+- Python 3.12 or later
+- [uv](https://docs.astral.sh/uv/) (fast Python package manager)
+
+### Installation
+
+```bash
+make install
+```
+
+This runs `uv sync`, which creates a virtual environment and installs all dependencies (Pygame, the local mazegenerator wheel).
+
+### Running the game
+
+```bash
+make run
+# or directly:
+uv run python pac-man.py config.json
+```
+
+The game takes **exactly one argument**: a JSON configuration file.
+
+### Other Makefile targets
+
+| Target | Description |
+|--------|-------------|
+| `make install` | Install dependencies via `uv sync` |
+| `make run` | Launch the game with `config.json` |
+| `make clean` | Remove `__pycache__`, `.mypy_cache` |
+| `make lint` | Run `flake8` + `mypy` (standard flags) |
+| `make lint-strict` | Run `flake8` + `mypy --strict` |
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| Arrow keys / WASD | Move Pac-Man |
+| P / Escape | Pause |
+| C | Open cheat menu (during game or from pause) |
+| Enter / Space | Confirm selection in menus |
+| Escape | Back / close overlay |
+
+---
+
+## Configuration
+
+The game reads a JSON configuration file passed as its only argument. Lines starting with `#` or `//` are treated as comments and ignored.
+
+On missing or invalid keys the game logs a warning to stderr, falls back to the safe default, and continues — it never crashes or prints a Python traceback.
+
+### Supported keys and defaults
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `highscore_filename` | string | `"scoreboard.json"` | Path to the highscore file |
+| `width` | int > 0 | `20` | Maze width (number of passage columns) |
+| `height` | int > 0 | `20` | Maze height (number of passage rows) |
+| `lives` | int > 0 | `3` | Starting lives |
+| `pacgum` | int ≥ 0 | `42` | (reserved — placed automatically from maze) |
+| `points_per_pacgum` | int ≥ 0 | `10` | Points for eating a pacgum |
+| `points_per_super_pacgum` | int ≥ 0 | `50` | Points for eating a super-pacgum |
+| `points_per_ghost` | int ≥ 0 | `200` | Points for eating a frightened ghost |
+| `seed` | int ≥ 0 | `42` | Seed used for level 1 (subsequent levels use random seeds) |
+| `level_max_time` | int > 0 | `90` | Time limit per level in seconds |
+| `pacman_speed` | float > 0 | `1.0` | Base Pac-Man speed multiplier |
+| `ghost_speed` | float > 0 | `1.0` | Base ghost speed multiplier |
+| `godmode` | bool | `false` | Start with godmode (invincibility) enabled |
+
+### Minimal example (`config.json`)
+
+```json
+{
+    "width": 10,
+    "height": 10,
+    "pacman_speed": 0.8,
+    "ghost_speed": 0.5,
+    "points_per_ghost": 200,
+    "lives": 3
+}
+```
+
+---
+
+## Highscore System
+
+### How it works
+
+Highscores are stored in a JSON file on disk (default: `scoreboard.json` next to the game). The file is loaded at startup and saved whenever a game ends (win or lose). The player is prompted to enter their name (max 10 characters, letters, digits, and spaces), which is normalised to uppercase.
+
+The file format is a JSON array of objects:
+
+```json
+[
+  {"name": "ALICE", "score": 4200},
+  {"name": "BOB",   "score": 3100}
+]
+```
+
+The system keeps up to 100 entries on disk and displays the top 10 in the highscore screen. A legacy dict format (`{"name": score}`) is also accepted in reading and silently migrated to the list format on the next save.
+
+All file errors (missing file, invalid JSON, unexpected structure) are silently swallowed: the loader returns an empty list and the game continues normally.
+
+### Why this implementation
+
+The JSON list-of-objects format was chosen because it is human-readable, easily edited by hand for testing, and requires no external database dependency. The file is small (at most a few hundred bytes), so reading and rewriting it in full on each save is trivially fast and keeps the logic simple and robust.
+
+---
+
+## Maze Generation
+
+The project uses an external `mazegenerator` package (provided as a `.whl` in `lib/`) without any modification. The package is imported via `from mazegenerator import MazeGenerator`.
+
+### Integration (`src/models/maze.py`)
+
+```python
+generator = MazeGenerator(size=(cols, rows), seed=seed, perfect=False)
+```
+
+`perfect=False` is mandatory: it produces Pac-Man-compatible corridors with multiple paths instead of a perfect (tree-shaped) maze.
+
+The generator returns a 2D grid where each cell encodes its walls as 4 bits (N=1, E=2, S=4, W=8). `Maze._build_wall_grid()` converts this into a **doubled grid** (each original cell becomes a 2×2 block plus shared wall cells), where `1` = wall and `0` = passage. This doubled representation makes pixel-level collision detection straightforward.
+
+### Level seeding
+
+- **Level 1**: the fixed seed from `config.json` (default 42) — always the same maze.
+- **Levels 2+**: a fresh `random.randint(0, 2**31 - 1)` seed — a new maze every time.
+
+### Pacgum placement
+
+All reachable passage cells (found via BFS from the maze entry) become pacgums. The four cells closest to the four corners are promoted to super-pacgums (power pellets).
+
+If the generator raises an exception (e.g., invalid size), the error propagates cleanly to `load_config` / `GameController`, which exits with a clear message.
+
+---
+
+## Implementation
+
+### Game loop
+
+The game runs at 60 FPS. Each frame the active `Scene` receives `handle_events → update → draw`. The `GameController` manages the current scene and the `change_scene` transition.
+
+### Entities and movement
+
+All entities (Pac-Man and ghosts) move in pixel space on the doubled grid. They snap to the centre of the nearest corridor tile at each intersection, which prevents wall clipping. Pac-Man stores the last two pixel positions per frame (`cells_visited`) so that pacgum collection and ghost collisions are checked on every grid cell crossed during fast movement, not just the final position.
+
+### Ghost AI
+
+Each ghost uses BFS on the passage grid to find the shortest path to its target:
+
+| Ghost | Color | Target (normal mode) |
+|-------|-------|----------------------|
+| Blinky | Red | Pac-Man's current cell |
+| Pinky | Pink | 1 cell ahead of Pac-Man |
+| Inky | Cyan | Symmetric of Pac-Man w.r.t. Blinky |
+| Clyde | Orange | Pac-Man if far (> 2 cells), else flees |
+
+In **frightened** mode (after a super-pacgum is eaten) ghosts reverse direction once and then move randomly at intersections. In **eaten** mode ghosts rush back to their spawn using a dynamically adjusted speed (BFS path length / remaining time) so they arrive exactly when the eaten timer expires.
+
+### Level progression
+
+Ghosts gain +10% speed per level (`GHOST_SPEEDUP_PER_LEVEL = 0.1`). Score and lives carry over between levels. The level timer pauses naturally because `update()` is not called while the game is paused.
+
+### Cheat mode
+
+Accessed with `C` during the game. Available toggles: godmode (invincibility), ghost freeze, speed boost (×2.5), show ghost BFS paths, show ghost targets. Actions: +1 life, skip level.
+
+---
+
+## General Software Architecture
+
+```
+pac-man.py              Entry point — calls src/main.py:main()
+src/
+├── config.py           JSON loading, comment stripping, validation/clamping
+├── highscores.py       Load/save highscore file (robust to all file errors)
+├── main.py             main() — parse args, load config, start GameController
+│
+├── controllers/
+│   ├── game_controller.py   Pygame init, main loop, scene switching
+│   └── input_controller.py  Raw key → buffered direction for Pac-Man
+│
+├── models/
+│   ├── game.py         Root game state: maze, entities, score, lives, timer
+│   ├── maze.py         Maze model (doubled grid, pacgum sets, BFS reachability)
+│   ├── pacman.py       Pac-Man entity (movement, collision, death/respawn)
+│   └── ghost.py        Ghost base class + BFS AI + Blinky/Pinky/Inky/Clyde
+│
+├── scenes/
+│   ├── scene.py        Abstract base scene
+│   ├── menu_scene.py   Main menu (start, highscores, instructions, quit)
+│   ├── game_scene.py   In-game HUD + game logic bridge
+│   ├── pause_scene.py  Pause overlay (resume, cheat, main menu)
+│   ├── cheat_scene.py  Cheat menu overlay
+│   ├── game_over_scene.py   Game-over screen + name entry
+│   ├── win_scene.py    Victory screen + name entry
+│   ├── highscore_scene.py   Top-10 display
+│   └── instructions_scene.py  Controls and rules
+│
+└── views/
+    ├── game_view.py    Top-level renderer (maze + entities + HUD)
+    ├── maze_view.py    Tile-based maze renderer (auto-tiling)
+    ├── sprite_view.py  Animated sprite renderer for entities
+    ├── sprites.py      SpriteSheet loader and frame extractor
+    ├── bitmap_font.py  Bitmap font renderer (from sprite sheet)
+    └── settings.py     View constants (tile size, colours, …)
+```
+
+**Key relationships:**
+
+- `GameController` owns the current `Scene` and the shared `SpriteSheet`.
+- `GameScene` owns a `Game` instance (model root) and a `GameView` (renderer).
+- `Game` owns `Maze`, `Pacman`, and the four `Ghost` instances.
+- Scenes communicate only through `app.change_scene(next_scene)` — no direct scene-to-scene references except for the cheat menu, which holds a back-reference to `GameScene` to be able to resume it.
+
+---
+
+## Project Management
+
+### Team organization
+
+The project was developed by two contributors:
+
+**zakburak** — core engine and game mechanics
+- Project scaffolding: MVC structure, configuration loading, asset pipeline
+- Maze model: doubled-grid representation, BFS reachability, pacgum/super-pacgum placement, auto-tiling renderer
+- Pac-Man entity: movement, wall collision, boundary clamping, hitbox, animation state tracking
+- Ghost AI: BFS pathfinding, individual targeting logic for Blinky, Pinky, Inky, and Clyde, frightened / eaten state machine, dynamic eaten-speed calculation
+- Game loop: pacgum collection with inter-frame interpolation, ghost collision detection, score popups, level timer, respawn mechanics
+- Cheat menu: godmode, ghost freeze, speed boost, level skip, debug overlays (ghost paths and targets)
+- Ready-state display and death condition based on elapsed time
+
+**elsahin** — UI, scenes, and robustness
+- Config validation: defaults, clamping on invalid values, WASD support
+- Scene system: pause scene, game-over scene (score submission), win scene (score submission), highscore display
+- In-game HUD: bitmap font rendering, score / level / remaining time display
+- Maze view refactor: surface regeneration on level change
+- Font scaling and positioning across all scenes
+
+### Contribution summary
+
+| Contributor | Commits | Main areas |
+|-------------|---------|------------|
+| zakburak | ~38 | Engine, AI, gameplay, cheat mode |
+| elsahin | ~10 | UI, scenes, config robustness |
+
+---
+
+## Resources
+
+### References
+
+- [Pac-Man Wikipedia](https://en.wikipedia.org/wiki/Pac-Man) — history and original game rules
+- [The Pac-Man Dossier (Jamey Pittman)](https://www.gamedeveloper.com/design/the-pac-man-dossier) — exhaustive reference on ghost AI and game mechanics
+- [Pygame documentation](https://www.pygame.org/docs/) — display, events, drawing
+- [mazegenerator package](https://pypi.org/project/mazegenerator/) — the A-Maze-ing package used for maze generation
+- [mypy documentation](https://mypy.readthedocs.io/) — static type checking
+- [flake8 documentation](https://flake8.pycqa.org/) — coding standard enforcement
+
+### AI usage
+
+AI (Claude) was used during this project for the following tasks:
+
+- **Generating docstrings and type hints** for functions and classes, which was reviewed and adjusted before being committed.
+- **Debugging movement and collision edge cases** — describing symptoms to the AI and comparing its suggestions against the actual game behaviour.
+- **Drafting this README** — the structure and wording were generated with AI assistance, then reviewed and corrected to accurately reflect the actual implementation.
+- **Explaining library interfaces** — in particular the `mazegenerator` bit-encoding and Pygame rect/surface APIs.
+
+All AI-generated content was reviewed, tested, and validated before inclusion. The core game logic (ghost BFS, doubled-grid collision, timer clamping) was written and debugged manually.
