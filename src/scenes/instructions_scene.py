@@ -24,8 +24,8 @@ class InstructionsScene(Scene):
         super().__init__(app)
         h = app.screen.get_height()
         self.title_font = BitmapFont(app.sheet, "yellow",
-                                     scale=max(2, h // 80))
-        self.font = BitmapFont(app.sheet, "white", scale=max(1, h // 200))
+                                     scale=max(2, h // 104))
+        self.font = BitmapFont(app.sheet, "white", scale=max(1, h // 240))
 
     def handle_events(self, events, now):
         for event in events:
@@ -38,9 +38,17 @@ class InstructionsScene(Scene):
         screen.fill(BACKGROUND)
         w, h = screen.get_size()
 
-        self.title_font.draw(screen, "INSTRUCTIONS", center=(w // 2, h // 6))
+        # Titre + lignes centrés verticalement comme un seul bloc.
+        title_h = self.title_font.height
+        item_h = self.font.height
+        gap = item_h + 22
+        lines_h = (len(LINES) - 1) * gap + item_h
+        group_gap = title_h
+        top = (h - (title_h + group_gap + lines_h)) // 2
 
-        start_y = h // 3
-        gap = self.font.height + 22
+        self.title_font.draw(screen, "INSTRUCTIONS",
+                             center=(w // 2, top + title_h // 2))
+
+        start_y = top + title_h + group_gap + item_h // 2
         for i, line in enumerate(LINES):
             self.font.draw(screen, line, center=(w // 2, start_y + i * gap))

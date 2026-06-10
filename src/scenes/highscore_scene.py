@@ -16,8 +16,8 @@ class HighscoreScene(Scene):
         super().__init__(app)
         h = app.screen.get_height()
         self.title_font = BitmapFont(app.sheet, "yellow",
-                                     scale=max(2, h // 80))
-        self.font = BitmapFont(app.sheet, "white", scale=max(1, h // 180))
+                                     scale=max(2, h // 104))
+        self.font = BitmapFont(app.sheet, "white", scale=max(1, h // 220))
         path = app.config.get("highscore_filename", "scoreboard.json")
         self.scores = load_highscores(path)
 
@@ -32,14 +32,25 @@ class HighscoreScene(Scene):
         screen.fill(BACKGROUND)
         w, h = screen.get_size()
 
-        self.title_font.draw(screen, "HIGHSCORES", center=(w // 2, h // 6))
+        # Titre + classement centrés dans la zone au-dessus du hint du bas.
+        title_h = self.title_font.height
+        item_h = self.font.height
+        gap = item_h + 14
+        n = len(self.scores)
+        list_h = ((n - 1) * gap + item_h) if n else item_h
+        group_gap = title_h
+        total = title_h + group_gap + list_h
+        avail = h - h // 6  # réserve le bas pour "PRESS ESC TO GO BACK"
+        top = (avail - total) // 2
 
+        self.title_font.draw(screen, "HIGHSCORES",
+                             center=(w // 2, top + title_h // 2))
+
+        start_y = top + title_h + group_gap + item_h // 2
         if not self.scores:
             self.font.draw(screen, "NO HIGHSCORES YET",
-                           center=(w // 2, h // 2))
+                           center=(w // 2, start_y))
         else:
-            start_y = h // 3
-            gap = self.font.height + 14
             for i, (name, score) in enumerate(self.scores):
                 line = f"{i + 1}. {name} - {score} PTS"
                 self.font.draw(screen, line,
