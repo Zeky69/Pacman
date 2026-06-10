@@ -11,7 +11,7 @@ from .sprites import SpriteSheet
 from .maze_view import MazeView
 from .sprite_view import Animator
 from .bitmap_font import BitmapFont
-from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES, SCORE_SPRITE
+from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES, SCORE_SPRITE, FOOD
 
 ASSET_PATH = "assets/default.png"
 BACKGROUND = (0, 0, 0)
@@ -95,6 +95,15 @@ class GameView:
         for label, (sc, sr) in SCORE_SPRITE.items():
             raw = self.sheet.get_large_sprite(0, 0, sc, sr, 1)
             self._score_imgs[label] = pygame.transform.scale(raw, (score_size, score_size))
+
+        # Sprites des fruits bonus pré-scalés.
+        fruit_size = max(8, self.tile_px)
+        self._fruit_imgs: dict[str, pygame.Surface] = {}
+        for name, data in FOOD.items():
+            col, row = data["frame"][0]
+            palette_index, macro_row = COLORS[data["default_color"]]
+            raw = self.sheet.get_large_sprite(macro_row, palette_index, col, row, 1)
+            self._fruit_imgs[name] = pygame.transform.scale(raw, (fruit_size, fruit_size))
 
         # Ressources HUD : police sprite Pac-Man (3 couleurs) + icône de vie.
         hud_s = max(2, self.hud_top // 20)
@@ -334,6 +343,14 @@ class GameView:
                 sx = self.offset_x + round((gx + 0.5) * self.cell_pitch)
                 sy = self.offset_y + round((gy + 0.5) * self.cell_pitch)
                 self.screen.blit(self._sgom_img, self._sgom_img.get_rect(center=(sx, sy)))
+
+        # Fruit bonus
+        if game.fruit is not None:
+            fx = self.offset_x + round(game.fruit["x"] * self.model_scale)
+            fy = self.offset_y + round(game.fruit["y"] * self.model_scale)
+            img = self._fruit_imgs.get(game.fruit["name"])
+            if img:
+                self.screen.blit(img, img.get_rect(center=(fx, fy)))
 
         any_frightened = any(g.frightened for g in game.ghosts)
         if (DEBUG_SHOW_PATHS or game.show_paths) and not any_frightened:

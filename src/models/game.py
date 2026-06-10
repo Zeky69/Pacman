@@ -12,11 +12,27 @@ from .ghost import Blinky, Pinky, Inky, Clyde, FRIGHTENED_DURATION
 TILE_PX = 16
 HALF = TILE_PX // 2
 
-# Nombre de niveaux à enchaîner avant la victoire finale. Modifiable ici, ou
-# surchargé par la clé "level_count" de config.json.
 DEFAULT_LEVEL_COUNT = 10
 GHOST_SPEEDUP_PER_LEVEL = 0.1
 READY_MS = 2000
+
+# Fruits bonus (comme Pac-Man original) : (nom, points).
+# L'index correspond à level-1, clampé au dernier élément.
+FRUIT_TABLE: list[tuple[str, int]] = [
+    ("cherry",     100),
+    ("strawberry", 300),
+    ("orange",     500),
+    ("orange",     500),
+    ("apple",      700),
+    ("apple",      700),
+    ("grape",     1000),
+    ("grape",     1000),
+    ("galaxian",  2000),
+    ("galaxian",  2000),
+]
+FRUIT_DURATION = 9000   # ms de présence du fruit sur le plateau
+FRUIT_TRIGGER_1 = 0.30  # ratio de gommes mangées → 1re apparition
+FRUIT_TRIGGER_2 = 0.70  # ratio de gommes mangées → 2e apparition
 
 
 def _center(col: int, row: int) -> tuple[float, float]:
@@ -45,7 +61,12 @@ class Game:
         self._base_ghost_speed: float = config.get("ghost_speed", 1.0)
         self._seed: int = config.get("seed", 42)
 
+        self.fruit: Optional[dict[str, Any]] = None
+        self._fruit_spawned = 0
+        self._total_dots = 0
+
         self._build_maze()
+        self._reset_fruit_state()
         self._spawn_entities()
 
         # Timer de niveau (en ms). Le temps n'avance que pendant update() :
@@ -103,6 +124,53 @@ class Game:
             Clyde(*_center(0,   0),  speed=gs, direction="down"),
         ]
 
+    def _reset_fruit_state(self) -> None:
+        self.fruit = None
+        self._fruit_spawned = 0
+        all_cells = self.maze.pacgums | self.maze.super_pacgums
+        self._total_dots = len(all_cells)
+        # Case atteignable la plus proche du centre (comme les gums)
+        if all_cells:
+            tgx = self.config["width"] // 2 * 2 + 1
+            tgy = self.config["height"] // 2 * 2 + 1
+            cgx, cgy = min(all_cells, key=lambda p: (p[0] - tgx) ** 2 + (p[1] - tgy) ** 2)
+            self._fruit_pos: tuple[float, float] = (
+                (cgx + 0.5) * HALF, (cgy + 0.5) * HALF
+            )
+        else:
+            self._fruit_pos = _center(self.config["width"] // 2, self.config["height"] // 2)
+
+    def _maybe_spawn_fruit(self, now: int) -> None:
+        if self._fruit_spawned >= 2 or self._total_dots == 0 or self.fruit is not None:
+            return
+        eaten = self._total_dots - len(self.maze.pacgums) - len(self.maze.super_pacgums)
+        ratio = eaten / self._total_dots
+        trigger = FRUIT_TRIGGER_1 if self._fruit_spawned == 0 else FRUIT_TRIGGER_2
+        if ratio >= trigger:
+            idx = min(self.level - 1, len(FRUIT_TABLE) - 1)
+            name, pts = FRUIT_TABLE[idx]
+            fx, fy = self._fruit_pos
+            self.fruit = {"x": fx, "y": fy, "name": name, "points": pts,
+                          "until": now + FRUIT_DURATION}
+            self._fruit_spawned += 1
+
+    def _check_fruit_collection(self, now: int) -> None:
+        if self.fruit is None:
+            return
+        if now >= self.fruit["until"]:
+            self.fruit = None
+            return
+        dx = self.pacman.x - self.fruit["x"]
+        dy = self.pacman.y - self.fruit["y"]
+        if (dx * dx + dy * dy) ** 0.5 < self.pacman.size:
+            pts = self.fruit["points"]
+            self.score += pts
+            self.score_popups.append({
+                "x": self.fruit["x"], "y": self.fruit["y"],
+                "value": pts, "until": now + 1500,
+            })
+            self.fruit = None
+
     def skip_level(self) -> None:
         """Vide toutes les gommes : l'update détectera level_cleared et avancera."""
         self.maze.pacgums.clear()
@@ -115,6 +183,7 @@ class Game:
         """
         self.level += 1
         self._build_maze()
+        self._reset_fruit_state()
         self._spawn_entities()
         self.score_popups = []
         self.elapsed_ms = 0
@@ -168,7 +237,12 @@ class Game:
         if not self.ghost_freeze:
             for ghost in self.ghosts:
                 ghost.update(self.maze, self.pacman, now)
+        else:
+            for ghost in self.ghosts:
+                ghost.tick_timers(now)
         self._collect(now)
+        self._maybe_spawn_fruit(now)
+        self._check_fruit_collection(now)
         self._check_ghost_collisions(now)
 
         # Tableau vidé : on enchaîne le niveau suivant tant qu'il en reste.

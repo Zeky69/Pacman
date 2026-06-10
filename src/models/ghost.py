@@ -197,19 +197,20 @@ class Ghost:
             return random.choice(valid)
         return opposite  # cul-de-sac : demi-tour contraint
 
-    def update(self, maze: Any, pacman: Any, now: int = 0) -> None:
-        # Expiration de l'état effrayé
+    def tick_timers(self, now: int) -> None:
+        """Expire les états temporels (frightened, eaten) indépendamment du mouvement."""
         if self.frightened and now > 0 and now >= self.frightened_until:
             self.frightened = False
             self.frightened_until = 0
-
-        # Expiration de l'état eaten : snap au spawn et retour à la normale
         if self.eaten and now > 0 and now >= self.eaten_until:
             self.eaten = False
             self.eaten_until = 0
             self.x = self.spawn_x
             self.y = self.spawn_y
             self.direction = self.spawn_direction
+
+    def update(self, maze: Any, pacman: Any, now: int = 0) -> None:
+        self.tick_timers(now)
 
         spd = self.eaten_speed if self.eaten else self.speed
 

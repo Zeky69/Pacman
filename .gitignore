@@ -12,3 +12,4 @@ wheels/
 .claude
 *.pdf
 scoreboard.json
+.mypy_cache/
