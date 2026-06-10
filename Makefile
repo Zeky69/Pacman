@@ -12,8 +12,8 @@ clean:
 
 lint:
 	uv run flake8 .
-	uv run mypy . --exclude=.venv --exclude=debug --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	uv run mypy . --exclude=.venv --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict:
 	uv run flake8 .
-	uv run mypy . --exclude=.venv --exclude=debug --strict
+	uv run mypy . --exclude=.venv --strict
