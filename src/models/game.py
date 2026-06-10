@@ -145,6 +145,10 @@ class Game:
                 self._do_respawn()
             return  # gel complet pendant la mort
 
+        if self.elapsed_ms >= self.max_time * 1000:
+            self.pacman.die(now)
+            return
+
         self.pacman.update(self.maze)
         if not self.ghost_freeze:
             for ghost in self.ghosts:
@@ -160,6 +164,8 @@ class Game:
 
     def _do_respawn(self):
         self.lives -= 1
+        self.elapsed_ms = 0
+        self._last_now = None
         if self.lives <= 0:
             self.pacman.dead = False  # débloquer la détection de game over
             return
