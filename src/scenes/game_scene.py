@@ -24,8 +24,8 @@ class GameScene(Scene):
     def update(self, now):
         self.game.update(now)
         if self.game.game_over:
-            from .menu_scene import MenuScene
-            self.app.change_scene(MenuScene(self.app))
+            from .game_over_scene import GameOverScene
+            self.app.change_scene(GameOverScene(self.app, self.game.score))
 
     def draw(self, screen, now):
         self.view.render(self.game, now)
