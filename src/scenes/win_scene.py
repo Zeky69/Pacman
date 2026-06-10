@@ -30,9 +30,9 @@ class WinScene(Scene):
         self.path = app.config.get("highscore_filename", "scoreboard.json")
         h = app.screen.get_height()
         self.title_font = BitmapFont(app.sheet, "yellow",
-                                     scale=max(2, h // 56))
-        self.font = BitmapFont(app.sheet, "white", scale=max(1, h // 160))
-        self.font_hi = BitmapFont(app.sheet, "yellow", scale=max(2, h // 96))
+                                     scale=max(2, h // 72))
+        self.font = BitmapFont(app.sheet, "white", scale=max(1, h // 200))
+        self.font_hi = BitmapFont(app.sheet, "yellow", scale=max(2, h // 120))
 
     def _submit(self):
         """Enregistre le score (une seule fois) puis va aux highscores."""
@@ -63,16 +63,29 @@ class WinScene(Scene):
         screen.fill(BACKGROUND)
         w, h = screen.get_size()
 
-        self.title_font.draw(screen, "YOU WON!", center=(w // 2, h // 5))
+        # Bloc principal (titre / score / invite / saisie) centré au-dessus
+        # de la zone réservée aux deux hints du bas.
+        title_h = self.title_font.height
+        fh = self.font.height
+        hh = self.font_hi.height
+        g = fh
+        total = title_h + g + fh + g + fh + g + hh
+        top = (h - h // 5 - total) // 2
+
+        y = top
+        self.title_font.draw(screen, "YOU WON!",
+                             center=(w // 2, y + title_h // 2))
+        y += title_h + g
         self.font.draw(screen, f"SCORE {self.score}",
-                       center=(w // 2, h // 3))
+                       center=(w // 2, y + fh // 2))
+        y += fh + g
         self.font.draw(screen, "ENTER YOUR NAME",
-                       center=(w // 2, h // 2 - self.font.height))
+                       center=(w // 2, y + fh // 2))
+        y += fh + g
 
         # Champ de saisie : nom centré + curseur clignotant à droite.
-        field_y = h // 2 + self.font_hi.height
         text = self.name or " "
-        rect = self.font_hi.draw(screen, text, center=(w // 2, field_y))
+        rect = self.font_hi.draw(screen, text, center=(w // 2, y + hh // 2))
         if (now // 400) % 2 == 0 and len(self.name) < MAX_NAME:
             cw = self.font_hi.cell // 2
             cursor = pygame.Rect(0, 0, cw, self.font_hi.height)

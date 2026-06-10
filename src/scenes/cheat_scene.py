@@ -35,8 +35,8 @@ class CheatScene(Scene):
         self.overlay.fill(OVERLAY_COLOR)
 
         h = app.screen.get_height()
-        big   = max(2, h // 72)
-        small = max(1, h // 160)
+        big   = max(2, h // 92)
+        small = max(1, h // 200)
         self.title_font = BitmapFont(app.sheet, "yellow", scale=big)
         self.font       = BitmapFont(app.sheet, "white",  scale=small)
         self.font_sel   = BitmapFont(app.sheet, "yellow", scale=small)
@@ -86,10 +86,18 @@ class CheatScene(Scene):
         screen.blit(self.overlay, (0, 0))
         w, h = screen.get_size()
 
-        self.title_font.draw(screen, "CHEAT MODE", center=(w // 2, h // 5))
+        # Titre + items centrés verticalement comme un seul bloc.
+        title_h = self.title_font.height
+        item_h = self.font.height
+        gap = item_h + 26
+        items_h = (len(_ITEMS) - 1) * gap + item_h
+        group_gap = title_h
+        top = (h - (title_h + group_gap + items_h)) // 2
 
-        gap = self.font.height + 26
-        start_y = h // 3
+        self.title_font.draw(screen, "CHEAT MODE",
+                             center=(w // 2, top + title_h // 2))
+
+        start_y = top + title_h + group_gap + item_h // 2
         for i, (label, kind, attr) in enumerate(_ITEMS):
             y = start_y + i * gap
             font = self.font_sel if i == self.selected else self.font
