@@ -13,7 +13,7 @@ OVERLAY_COLOR = (0, 0, 0, 210)
 
 # (label affiché, type, attribut game pour les toggles)
 _ITEMS = [
-    ("GODMODE",     "toggle", "godmode"),
+    ("INVINCIBLE",  "toggle", "invincible"),
     ("FREEZE",      "toggle", "ghost_freeze"),
     ("SPEED BOOST", "toggle", "speed_boost"),
     ("+1 LIFE",     "action", None),

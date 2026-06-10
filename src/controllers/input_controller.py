@@ -31,7 +31,7 @@ class InputController:
             if event.key == pygame.K_c:
                 return "cheat"
             if event.key == pygame.K_g:
-                game.godmode = not game.godmode
+                game.invincible = not game.invincible
                 continue
             if event.key == pygame.K_f:
                 game.ghost_freeze = not game.ghost_freeze

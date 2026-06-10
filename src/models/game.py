@@ -33,7 +33,7 @@ class Game:
         self.level = 1
         self.max_level = config.get("level_count", DEFAULT_LEVEL_COUNT)
         self.score_popups = []  # [{x, y, value, until}]
-        self.godmode = bool(config.get("godmode", False))
+        self.invincible = bool(config.get("invincible", False))
         self.ghost_freeze = False
         self.speed_boost = False
 
@@ -220,7 +220,7 @@ class Game:
                             'value': pts, 'until': now + 1000,
                         })
                 else:
-                    if not self.godmode and pac_kill_rect.colliderect(ghost.rect):
+                    if not self.invincible and pac_kill_rect.colliderect(ghost.rect):
                         self.pacman.die(now)
                         return  # une seule mort par frame
 
