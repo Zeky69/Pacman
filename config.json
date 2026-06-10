@@ -4,6 +4,5 @@
 	"pacman_speed": 0.8,
 	"ghost_speed": 0.5,
 	"points_per_ghost": 200,
-	"lives": 3, 
-	"zakburak": 5
+	"lives": 3
 } 

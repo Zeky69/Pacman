@@ -1,5 +1,7 @@
 """État global du jeu : agrège le labyrinthe et les entités."""
 
+import random
+
 import pygame
 
 from .maze import Maze
@@ -8,6 +10,12 @@ from .ghost import Blinky, Pinky, Inky, Clyde, FRIGHTENED_DURATION, EATEN_DURATI
 
 TILE_PX = 16   # case d'origine en pixels-modèle
 HALF    = TILE_PX // 2  # cellule de la grille doublée = hitbox des entités
+
+# Nombre de niveaux à enchaîner avant la victoire finale. Modifiable ici, ou
+# surchargé par la clé "level_count" de config.json.
+DEFAULT_LEVEL_COUNT = 5
+# Accélération des fantômes par niveau (+10 % de vitesse à chaque palier).
+GHOST_SPEEDUP_PER_LEVEL = 0.1
 
 
 def _center(col, row):
@@ -20,15 +28,46 @@ class Game:
 
     def __init__(self, config):
         self.config = config
-        # seed depuis la config ; PERFECT=False -> couloirs Pac-Man.
+        self.lives = config.get("lives", 3)
+        self.score = 0
+        self.level = 1
+        self.max_level = config.get("level_count", DEFAULT_LEVEL_COUNT)
+        self.score_popups = []  # [{x, y, value, until}]
+        self.godmode = bool(config.get("godmode", False))
+
+        # Vitesses de base ; les fantômes accélèrent à chaque niveau.
+        self._pacman_speed = config.get("pacman_speed", 1.0)
+        self._base_ghost_speed = config.get("ghost_speed", 1.0)
+        self._seed = config.get("seed", 42)
+
+        self._build_maze()
+        self._spawn_entities()
+
+        # Timer de niveau (en ms). Le temps n'avance que pendant update() :
+        # la pause (qui ne fait pas d'update) gèle donc naturellement le timer.
+        self.max_time = config.get("level_max_time", 90)
+        self.elapsed_ms = 0
+        self._last_now = None
+
+    def _ghost_speed(self):
+        """Vitesse des fantômes au niveau courant (accélère par palier)."""
+        factor = 1 + GHOST_SPEEDUP_PER_LEVEL * (self.level - 1)
+        return self._base_ghost_speed * factor
+
+    def _build_maze(self):
+        """(Re)construit le labyrinthe du niveau + ses rectangles de murs.
+
+        Niveau 1 : graine fixe de la config (42 par défaut), tableau
+        reproductible. Niveaux suivants : graine aléatoire, donc un labyrinthe
+        différent à chaque fois. PERFECT=False donne les couloirs Pac-Man.
+        """
+        seed = self._seed if self.level == 1 else random.randint(0, 2**31 - 1)
         self.maze = Maze(
-            cols=config["width"],
-            rows=config["height"],
-            seed=config.get("seed", 42),
+            cols=self.config["width"],
+            rows=self.config["height"],
+            seed=seed,
             perfect=False,
         )
-        self.lives = config.get("lives", 3)
-
         # Pré-calcul des rectangles de murs (grille doublée → pixels-modèle).
         self.maze.wall_rects = [
             pygame.Rect(gx * HALF, gy * HALF, HALF, HALF)
@@ -37,32 +76,36 @@ class Game:
             if self.maze.grid[gy][gx] == 1
         ]
 
+    def _spawn_entities(self):
+        """(Re)place Pac-Man et les fantômes à leurs positions de départ."""
+        config = self.config
         pac_col = config["width"] // 2 - (1 if config["width"] % 2 == 0 else 0)
-        pacman_speed = config.get("pacman_speed", 1.0)
         self.pacman = Pacman(*_center(pac_col, config["height"] // 2),
-                             speed=pacman_speed)
+                             speed=self._pacman_speed)
 
-        ghost_speed = config.get("ghost_speed", 1.0)
+        gs = self._ghost_speed()
         cx, cy = config["width"] - 1, config["height"] - 1
-        blinky = Blinky(*_center(cx, cy), speed=ghost_speed, direction="up")
-        inky   = Inky(*_center(cx,  0),   speed=ghost_speed, direction="down")
+        blinky = Blinky(*_center(cx, cy), speed=gs, direction="up")
+        inky   = Inky(*_center(cx,  0),   speed=gs, direction="down")
         inky.blinky = blinky
         self.ghosts = [
             blinky,
-            Pinky(*_center(0,  cy),  speed=ghost_speed, direction="up"),
+            Pinky(*_center(0,  cy),  speed=gs, direction="up"),
             inky,
-            Clyde(*_center(0,   0),  speed=ghost_speed, direction="down"),
+            Clyde(*_center(0,   0),  speed=gs, direction="down"),
         ]
-        self.score = 0
-        self.level = 1
-        self.score_popups = []  # [{x, y, value, until}]
-        self.godmode = bool(config.get("godmode", False))
 
-        # Timer de niveau (en ms). Le temps n'avance que pendant update() :
-        # la pause (qui ne fait pas d'update) gèle donc naturellement le timer.
-        self.max_time = config.get("level_max_time", 90)
+    def _advance_level(self, now):
+        """Passe au niveau suivant : nouveau tableau, fantômes plus rapides.
+
+        Le score et les vies sont conservés ; le timer du niveau repart à zéro.
+        """
+        self.level += 1
+        self._build_maze()
+        self._spawn_entities()
+        self.score_popups = []
         self.elapsed_ms = 0
-        self._last_now = None
+        self._last_now = now
 
     @property
     def time_remaining(self):
@@ -75,6 +118,16 @@ class Game:
     @property
     def game_over(self):
         return self.lives <= 0 and not self.pacman.dead
+
+    @property
+    def level_cleared(self):
+        """Toutes les gommes du tableau courant ont été mangées."""
+        return not self.maze.pacgums and not self.maze.super_pacgums
+
+    @property
+    def won(self):
+        """Victoire finale : le dernier niveau vient d'être terminé."""
+        return self.level_cleared and self.level >= self.max_level
 
     def update(self, now=0):
         self._tick_timer(now)
@@ -90,6 +143,12 @@ class Game:
             ghost.update(self.maze, self.pacman, now)
         self._collect(now)
         self._check_ghost_collisions(now)
+
+        # Tableau vidé : on enchaîne le niveau suivant tant qu'il en reste.
+        # Le dernier niveau laisse `won` passer à True (géré par la scène).
+        if (not self.pacman.dead and self.level_cleared
+                and self.level < self.max_level):
+            self._advance_level(now)
 
     def _do_respawn(self):
         self.lives -= 1

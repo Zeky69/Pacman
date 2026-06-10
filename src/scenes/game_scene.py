@@ -26,6 +26,9 @@ class GameScene(Scene):
         if self.game.game_over:
             from .game_over_scene import GameOverScene
             self.app.change_scene(GameOverScene(self.app, self.game.score))
+        elif self.game.won:
+            from .win_scene import WinScene
+            self.app.change_scene(WinScene(self.app, self.game.score))
 
     def draw(self, screen, now):
         self.view.render(self.game, now)
