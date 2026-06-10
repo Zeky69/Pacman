@@ -298,6 +298,10 @@ class GameView:
             cheat_labels.append(("FREEZE", self.hud_font_red))
         if game.speed_boost:
             cheat_labels.append(("SPEED", self.hud_font))
+        if game.show_paths:
+            cheat_labels.append(("PATHS", self.hud_font))
+        if game.show_targets:
+            cheat_labels.append(("TARGETS", self.hud_font))
         cx = w - 16
         for label, font in reversed(cheat_labels):
             font.draw(self.screen, label, midright=(cx, y))
@@ -331,9 +335,9 @@ class GameView:
                 self.screen.blit(self._sgom_img, self._sgom_img.get_rect(center=(sx, sy)))
 
         any_frightened = any(g.frightened for g in game.ghosts)
-        if DEBUG_SHOW_PATHS and not any_frightened:
+        if (DEBUG_SHOW_PATHS or game.show_paths) and not any_frightened:
             self._draw_ghost_paths(game)
-        if DEBUG_SHOW_TARGETS and not any_frightened:
+        if (DEBUG_SHOW_TARGETS or game.show_targets) and not any_frightened:
             self._draw_ghost_targets(game)
             self._draw_inky_line(game)
             self._draw_clyde_radius(game)
@@ -356,3 +360,8 @@ class GameView:
 
         self._draw_score_popups(game)
         self._draw_hud(game)
+
+        if game.ready:
+            cx = self.offset_x + self.maze_surface.get_width() // 2
+            cy = self.offset_y + self.maze_surface.get_height() // 2
+            self.hud_font_yellow.draw(self.screen, "READY!", center=(cx, cy))
