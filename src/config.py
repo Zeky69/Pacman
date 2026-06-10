@@ -32,11 +32,11 @@ DEFAULTS = {
     "level_max_time": 90,
     "pacman_speed": 1.0,
     "ghost_speed": 1.0,
-    "godmode": False,
+    "invincible": False,
 }
 
 # Catégories de validation.
-_BOOL_KEYS   = ("godmode",)
+_BOOL_KEYS   = ("invincible",)
 _STRING_KEYS = ("highscore_filename",)
 # Entier >= 0 toléré (un score nul ou une graine 0 sont valides).
 _NON_NEGATIVE_INT_KEYS = (

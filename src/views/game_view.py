@@ -292,8 +292,8 @@ class GameView:
 
         # Indicateurs de cheats actifs (coin bas-droit).
         cheat_labels = []
-        if game.godmode:
-            cheat_labels.append(("GOD", self.hud_font_yellow))
+        if game.invincible:
+            cheat_labels.append(("INVINCIBLE", self.hud_font_yellow))
         if game.ghost_freeze:
             cheat_labels.append(("FREEZE", self.hud_font_red))
         if game.speed_boost:
@@ -351,7 +351,7 @@ class GameView:
                 animator.update(now)
             x = self.offset_x + round(entity.x * self.model_scale)
             y = self.offset_y + round(entity.y * self.model_scale)
-            if isinstance(entity, Pacman) and game.godmode:
+            if isinstance(entity, Pacman) and game.invincible:
                 img = animator.image.copy()
                 img.set_alpha(130)
                 self.screen.blit(img, img.get_rect(center=(x, y)))
