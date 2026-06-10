@@ -20,6 +20,9 @@ class GameScene(Scene):
         if action == "pause":
             from .pause_scene import PauseScene
             self.app.change_scene(PauseScene(self.app, self))
+        elif action == "cheat":
+            from .cheat_scene import CheatScene
+            self.app.change_scene(CheatScene(self.app, self))
 
     def update(self, now):
         self.game.update(now)

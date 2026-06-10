@@ -34,6 +34,8 @@ class Game:
         self.max_level = config.get("level_count", DEFAULT_LEVEL_COUNT)
         self.score_popups = []  # [{x, y, value, until}]
         self.godmode = bool(config.get("godmode", False))
+        self.ghost_freeze = False
+        self.speed_boost = False
 
         # Vitesses de base ; les fantômes accélèrent à chaque niveau.
         self._pacman_speed = config.get("pacman_speed", 1.0)
@@ -95,6 +97,11 @@ class Game:
             Clyde(*_center(0,   0),  speed=gs, direction="down"),
         ]
 
+    def skip_level(self):
+        """Vide toutes les gommes : l'update détectera level_cleared et avancera."""
+        self.maze.pacgums.clear()
+        self.maze.super_pacgums.clear()
+
     def _advance_level(self, now):
         """Passe au niveau suivant : nouveau tableau, fantômes plus rapides.
 
@@ -139,8 +146,9 @@ class Game:
             return  # gel complet pendant la mort
 
         self.pacman.update(self.maze)
-        for ghost in self.ghosts:
-            ghost.update(self.maze, self.pacman, now)
+        if not self.ghost_freeze:
+            for ghost in self.ghosts:
+                ghost.update(self.maze, self.pacman, now)
         self._collect(now)
         self._check_ghost_collisions(now)
 

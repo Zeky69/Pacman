@@ -11,3 +11,4 @@ wheels/
 *.lock
 .claude
 *.pdf
+scoreboard.json

@@ -276,13 +276,32 @@ class GameView:
         font = self.hud_font_red if secs <= 10 else self.hud_font
         font.draw(self.screen, f"TIME {secs}", midright=(w - 24, top_cy))
 
-        # Barre du bas : une icône Pac-Man par vie restante.
+        # Barre du bas : jusqu'à 5 icônes Pac-Man, puis "+N" si vies > 5.
+        MAX_ICONS = 5
         icon_w = self._life_icon.get_width()
         y = h - self.hud_bottom // 2
-        for i in range(max(0, game.lives)):
+        displayed = min(max(0, game.lives), MAX_ICONS)
+        for i in range(displayed):
             x = 24 + i * (icon_w + 10)
             rect = self._life_icon.get_rect(midleft=(x, y))
             self.screen.blit(self._life_icon, rect)
+        if game.lives > MAX_ICONS:
+            extra = game.lives - MAX_ICONS
+            ex = 24 + displayed * (icon_w + 10)
+            self.hud_font_yellow.draw(self.screen, f"+{extra}", midleft=(ex, y))
+
+        # Indicateurs de cheats actifs (coin bas-droit).
+        cheat_labels = []
+        if game.godmode:
+            cheat_labels.append(("GOD", self.hud_font_yellow))
+        if game.ghost_freeze:
+            cheat_labels.append(("FREEZE", self.hud_font_red))
+        if game.speed_boost:
+            cheat_labels.append(("SPEED", self.hud_font))
+        cx = w - 16
+        for label, font in reversed(cheat_labels):
+            font.draw(self.screen, label, midright=(cx, y))
+            cx -= font.measure(label) + 16
 
 
     def render(self, game, now):

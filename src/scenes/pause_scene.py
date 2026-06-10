@@ -16,7 +16,7 @@ OVERLAY_COLOR = (0, 0, 0, 180)
 class PauseScene(Scene):
     """Menu de pause : Resume / Return to Main Menu."""
 
-    OPTIONS = ("Resume", "Return to Main Menu")
+    OPTIONS = ("Resume", "Cheat Mode", "Return to Main Menu")
 
     def __init__(self, app, game_scene):
         super().__init__(app)
@@ -52,8 +52,12 @@ class PauseScene(Scene):
 
     def _activate(self):
         """Déclenche l'option sélectionnée."""
-        if self.OPTIONS[self.selected] == "Resume":
+        choice = self.OPTIONS[self.selected]
+        if choice == "Resume":
             self._resume()
+        elif choice == "Cheat Mode":
+            from .cheat_scene import CheatScene
+            self.app.change_scene(CheatScene(self.app, self.game_scene))
         else:
             from .menu_scene import MenuScene
             self.app.change_scene(MenuScene(self.app))
