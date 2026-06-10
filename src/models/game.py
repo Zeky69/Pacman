@@ -97,6 +97,11 @@ class Game:
             Clyde(*_center(0,   0),  speed=gs, direction="down"),
         ]
 
+    def skip_level(self):
+        """Vide toutes les gommes : l'update détectera level_cleared et avancera."""
+        self.maze.pacgums.clear()
+        self.maze.super_pacgums.clear()
+
     def _advance_level(self, now):
         """Passe au niveau suivant : nouveau tableau, fantômes plus rapides.
 

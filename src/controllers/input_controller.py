@@ -28,6 +28,8 @@ class InputController:
                 continue
             if event.key == pygame.K_ESCAPE:
                 return "pause"
+            if event.key == pygame.K_c:
+                return "cheat"
             if event.key == pygame.K_g:
                 game.godmode = not game.godmode
                 continue
