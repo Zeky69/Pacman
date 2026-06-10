@@ -7,7 +7,8 @@ Le fond est une capture figée du jeu (le modèle n'est plus mis à jour).
 
 import pygame
 
-from .scene import Scene
+from typing import Any
+from .scene import Scene, AppProtocol
 from ..views.bitmap_font import BitmapFont
 
 OVERLAY_COLOR = (0, 0, 0, 180)
@@ -18,7 +19,7 @@ class PauseScene(Scene):
 
     OPTIONS = ("Resume", "Cheat Mode", "Return to Main Menu")
 
-    def __init__(self, app, game_scene):
+    def __init__(self, app: AppProtocol, game_scene: Any) -> None:
         super().__init__(app)
         self.game_scene = game_scene
         self.selected = 0
@@ -33,11 +34,11 @@ class PauseScene(Scene):
         self.font = BitmapFont(app.sheet, "white", scale=small)
         self.font_sel = BitmapFont(app.sheet, "yellow", scale=small)
 
-    def _resume(self):
+    def _resume(self) -> None:
         """Reprend la partie en cours (même instance de GameScene)."""
         self.app.change_scene(self.game_scene)
 
-    def handle_events(self, events, now):
+    def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
         for event in events:
             if event.type != pygame.KEYDOWN:
                 continue
@@ -50,7 +51,7 @@ class PauseScene(Scene):
             elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                 self._activate()
 
-    def _activate(self):
+    def _activate(self) -> None:
         """Déclenche l'option sélectionnée."""
         choice = self.OPTIONS[self.selected]
         if choice == "Resume":
@@ -62,7 +63,7 @@ class PauseScene(Scene):
             from .menu_scene import MenuScene
             self.app.change_scene(MenuScene(self.app))
 
-    def draw(self, screen, now):
+    def draw(self, screen: pygame.Surface, now: int) -> None:
         screen.blit(self.snapshot, (0, 0))
         screen.blit(self.overlay, (0, 0))
         w, h = screen.get_size()

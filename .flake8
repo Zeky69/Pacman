@@ -1,0 +1,9 @@
+[flake8]
+max-line-length = 99
+exclude =
+    .venv,
+    debug,
+    project_management,
+    lib,
+    assets,
+    .git

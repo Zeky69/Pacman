@@ -1,24 +1,25 @@
 """État global du jeu : agrège le labyrinthe et les entités."""
 
 import random
+from typing import Any, Optional
 
 import pygame
 
 from .maze import Maze
 from .pacman import Pacman
-from .ghost import Blinky, Pinky, Inky, Clyde, FRIGHTENED_DURATION, EATEN_DURATION
+from .ghost import Blinky, Pinky, Inky, Clyde, FRIGHTENED_DURATION
 
-TILE_PX = 16   # case d'origine en pixels-modèle
-HALF    = TILE_PX // 2  # cellule de la grille doublée = hitbox des entités
+TILE_PX = 16
+HALF = TILE_PX // 2
 
 # Nombre de niveaux à enchaîner avant la victoire finale. Modifiable ici, ou
 # surchargé par la clé "level_count" de config.json.
-DEFAULT_LEVEL_COUNT = 5
+DEFAULT_LEVEL_COUNT = 10
 GHOST_SPEEDUP_PER_LEVEL = 0.1
 READY_MS = 2000
 
 
-def _center(col, row):
+def _center(col: int, row: int) -> tuple[float, float]:
     """Centre pixel du passage d'origine (col, row) dans l'espace modèle."""
     return (col * 2 + 1.5) * HALF, (row * 2 + 1.5) * HALF
 
@@ -26,13 +27,13 @@ def _center(col, row):
 class Game:
     """Conteneur de l'état de jeu (modèle racine)."""
 
-    def __init__(self, config):
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
         self.lives = config.get("lives", 3)
         self.score = 0
         self.level = 1
         self.max_level = config.get("level_count", DEFAULT_LEVEL_COUNT)
-        self.score_popups = []  # [{x, y, value, until}]
+        self.score_popups: list[dict[str, Any]] = []  # [{x, y, value, until}]
         self.invincible = bool(config.get("invincible", False))
         self.ghost_freeze = False
         self.speed_boost = False
@@ -40,27 +41,27 @@ class Game:
         self.show_targets = False
 
         # Vitesses de base ; les fantômes accélèrent à chaque niveau.
-        self._pacman_speed = config.get("pacman_speed", 1.0)
-        self._base_ghost_speed = config.get("ghost_speed", 1.0)
-        self._seed = config.get("seed", 42)
+        self._pacman_speed: float = config.get("pacman_speed", 1.0)
+        self._base_ghost_speed: float = config.get("ghost_speed", 1.0)
+        self._seed: int = config.get("seed", 42)
 
         self._build_maze()
         self._spawn_entities()
 
         # Timer de niveau (en ms). Le temps n'avance que pendant update() :
         # la pause (qui ne fait pas d'update) gèle donc naturellement le timer.
-        self.max_time = config.get("level_max_time", 90)
+        self.max_time: int = config.get("level_max_time", 90)
         self.elapsed_ms = 0
-        self._last_now = None
+        self._last_now: Optional[int] = None
         self.ready = True
-        self._ready_until = None
+        self._ready_until: Optional[int] = None
 
-    def _ghost_speed(self):
+    def _ghost_speed(self) -> float:
         """Vitesse des fantômes au niveau courant (accélère par palier)."""
         factor = 1 + GHOST_SPEEDUP_PER_LEVEL * (self.level - 1)
         return self._base_ghost_speed * factor
 
-    def _build_maze(self):
+    def _build_maze(self) -> None:
         """(Re)construit le labyrinthe du niveau + ses rectangles de murs.
 
         Niveau 1 : graine fixe de la config (42 par défaut), tableau
@@ -82,7 +83,7 @@ class Game:
             if self.maze.grid[gy][gx] == 1
         ]
 
-    def _spawn_entities(self):
+    def _spawn_entities(self) -> None:
         """(Re)place Pac-Man et les fantômes à leurs positions de départ."""
         config = self.config
         pac_col = config["width"] // 2 - (1 if config["width"] % 2 == 0 else 0)
@@ -93,7 +94,7 @@ class Game:
         gs = self._ghost_speed()
         cx, cy = config["width"] - 1, config["height"] - 1
         blinky = Blinky(*_center(cx, cy), speed=gs, direction="up")
-        inky   = Inky(*_center(cx,  0),   speed=gs, direction="down")
+        inky = Inky(*_center(cx, 0), speed=gs, direction="down")
         inky.blinky = blinky
         self.ghosts = [
             blinky,
@@ -102,12 +103,12 @@ class Game:
             Clyde(*_center(0,   0),  speed=gs, direction="down"),
         ]
 
-    def skip_level(self):
+    def skip_level(self) -> None:
         """Vide toutes les gommes : l'update détectera level_cleared et avancera."""
         self.maze.pacgums.clear()
         self.maze.super_pacgums.clear()
 
-    def _advance_level(self, now):
+    def _advance_level(self, now: int) -> None:
         """Passe au niveau suivant : nouveau tableau, fantômes plus rapides.
 
         Le score et les vies sont conservés ; le timer du niveau repart à zéro.
@@ -122,28 +123,28 @@ class Game:
         self._ready_until = None
 
     @property
-    def time_remaining(self):
+    def time_remaining(self) -> int:
         """Secondes restantes sur le niveau (jamais négatif)."""
         return max(0, self.max_time - self.elapsed_ms // 1000)
 
-    def entities(self):
+    def entities(self) -> list[Any]:
         return [self.pacman, *self.ghosts]
 
     @property
-    def game_over(self):
+    def game_over(self) -> bool:
         return self.lives <= 0 and not self.pacman.dead
 
     @property
-    def level_cleared(self):
+    def level_cleared(self) -> bool:
         """Toutes les gommes du tableau courant ont été mangées."""
         return not self.maze.pacgums and not self.maze.super_pacgums
 
     @property
-    def won(self):
+    def won(self) -> bool:
         """Victoire finale : le dernier niveau vient d'être terminé."""
         return self.level_cleared and self.level >= self.max_level
 
-    def update(self, now=0):
+    def update(self, now: int = 0) -> None:
         if self.ready:
             if self._ready_until is None:
                 self._ready_until = now + READY_MS
@@ -176,7 +177,7 @@ class Game:
                 and self.level < self.max_level):
             self._advance_level(now)
 
-    def _do_respawn(self):
+    def _do_respawn(self) -> None:
         self.lives -= 1
         self.elapsed_ms = 0
         self._last_now = None
@@ -194,7 +195,7 @@ class Game:
         self.ready = True
         self._ready_until = None
 
-    def _tick_timer(self, now):
+    def _tick_timer(self, now: int) -> None:
         """Accumule le temps écoulé, en clampant les sauts (pause, lag)."""
         if self._last_now is None:
             self._last_now = now
@@ -203,7 +204,7 @@ class Game:
         # Clamp : après une pause ou un freeze, le delta peut être énorme.
         self.elapsed_ms += max(0, min(dt, 100))
 
-    def _check_ghost_collisions(self, now):
+    def _check_ghost_collisions(self, now: int) -> None:
         fps = self.config.get("fps", 60)
         size = self.pacman.size
         h = size // 2
@@ -227,7 +228,7 @@ class Game:
             check_px.append((px, py))
 
         for px, py in check_px:
-            pac_rect      = pygame.Rect(int(px) - h, int(py) - h, size, size)
+            pac_rect = pygame.Rect(int(px) - h, int(py) - h, size, size)
             pac_kill_rect = pac_rect.inflate(-h, -h)
             for ghost in self.ghosts:
                 if ghost.eaten:
@@ -246,7 +247,7 @@ class Game:
                         self.pacman.die(now)
                         return  # une seule mort par frame
 
-    def _try_collect(self, cell, now):
+    def _try_collect(self, cell: tuple[int, int], now: int) -> None:
         if cell in self.maze.pacgums:
             self.maze.pacgums.discard(cell)
             self.score += self.config.get("points_per_pacgum", 10)
@@ -257,7 +258,7 @@ class Game:
             for ghost in self.ghosts:
                 ghost.frighten(until)
 
-    def _collect(self, now=0):
+    def _collect(self, now: int = 0) -> None:
         # Itérer TOUTES les cases de la grille doublée traversées ce frame,
         # y compris les cases de passage (gx/gy pairs) entre deux centres.
         seen = set()

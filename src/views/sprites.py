@@ -1,4 +1,5 @@
 import math
+from typing import Any, Optional
 import pygame
 
 from .settings import (
@@ -10,51 +11,51 @@ from .settings import (
 _PALETTE_TO_NAME = {v: k for k, v in COLORS.items()}
 
 _NAMED_RGB = {
-    "red":      (220,  50,  50),
-    "pink":     (255, 184, 255),
-    "cyan":     (  0, 220, 220),
-    "orange":   (255, 184,  81),
-    "beige-2":  (222, 184, 135),
-    "red-2":    (255, 100, 100),
-    "black":    ( 20,  20,  20),
-    "yellow":   (255, 220,   0),
-    "blue":     ( 50,  50, 220),
-    "white":    (255, 255, 255),
-    "red-3":    (200,  80,  80),
-    "beige":    (210, 180, 140),
-    "white-2":  (230, 230, 230),
-    "white-3":  (210, 210, 210),
-    "orange-2": (255, 165,   0),
-    "white-4":  (200, 200, 200),
-    "yellow-2": (255, 200,   0),
-    "white-5":  (190, 190, 190),
-    "beige-3":  (195, 170, 120),
-    "fatih":    (150, 100, 200),
+    "red": (220, 50, 50),
+    "pink": (255, 184, 255),
+    "cyan": (0, 220, 220),
+    "orange": (255, 184, 81),
+    "beige-2": (222, 184, 135),
+    "red-2": (255, 100, 100),
+    "black": (20, 20, 20),
+    "yellow": (255, 220, 0),
+    "blue": (50, 50, 220),
+    "white": (255, 255, 255),
+    "red-3": (200, 80, 80),
+    "beige": (210, 180, 140),
+    "white-2": (230, 230, 230),
+    "white-3": (210, 210, 210),
+    "orange-2": (255, 165, 0),
+    "white-4": (200, 200, 200),
+    "yellow-2": (255, 200, 0),
+    "white-5": (190, 190, 190),
+    "beige-3": (195, 170, 120),
+    "fatih": (150, 100, 200),
 }
 
 _WALL_BLUE = (33, 33, 200)
 
 
-def _palette_rgb(palette_index, macro_row):
+def _palette_rgb(palette_index: int, macro_row: int) -> tuple[int, int, int]:
     name = _PALETTE_TO_NAME.get((palette_index, macro_row))
     return _NAMED_RGB.get(name, (128, 128, 128)) if name else (128, 128, 128)
 
 
 _MAZE_COORDS_TO_NAME = {(v[0], v[1]): k for k, v in MAZE_TILE.items()}
 _DOT_SMALL = tuple(GOMMES_TILES["small"])
-_DOT_BIG   = tuple(GOMMES_TILES["big"])
+_DOT_BIG = tuple(GOMMES_TILES["big"])
 
 FALLBACK_CORNER_MAP = {
-     0: None,
-     1: "corner_outer_top_left",
-     2: "corner_outer_top_right",
-     3: "wall_horizontal_top",
-     4: "corner_outer_bottom_left",
-     5: "border_wall_vertical_left",
-     6: "wall_fill",
-     7: "border_corner_outer_bottom_right",
-     8: "corner_outer_bottom_right",
-     9: "wall_fill",
+    0: None,
+    1: "corner_outer_top_left",
+    2: "corner_outer_top_right",
+    3: "wall_horizontal_top",
+    4: "corner_outer_bottom_left",
+    5: "border_wall_vertical_left",
+    6: "wall_fill",
+    7: "border_corner_outer_bottom_right",
+    8: "corner_outer_bottom_right",
+    9: "wall_fill",
     10: "wall_vertical_right",
     11: "border_corner_outer_bottom_left",
     12: "wall_horizontal_bottom",
@@ -64,26 +65,45 @@ FALLBACK_CORNER_MAP = {
 }
 
 FALLBACK_BORDER_MAPS = {
-    "TL": {14: "border_corner_inner_top_left",    15: "wall_fill"},
-    "TR": {13: "border_corner_inner_top_right",   15: "wall_fill"},
+    "TL": {14: "border_corner_inner_top_left", 15: "wall_fill"},
+    "TR": {13: "border_corner_inner_top_right", 15: "wall_fill"},
     "BL": {11: "border_corner_inner_bottom_left", 15: "wall_fill"},
-    "BR": { 7: "border_corner_inner_bottom_right", 15: "wall_fill"},
-    "T":  {12: "border_wall_horizontal_bottom",
-           13: "border_corner_outer_top_right",
-           14: "corner_outer_top_left",            15: "wall_fill"},
-    "B":  { 3: "border_wall_horizontal_top",
-            7: "border_corner_outer_bottom_right",
-           11: "corner_outer_bottom_left",         15: "wall_fill"},
-    "L":  {10: "border_wall_vertical_right",
-           11: "corner_outer_bottom_left",
-           14: "border_corner_outer_top_left",     15: "wall_fill"},
-    "R":  { 5: "border_wall_vertical_left",
-            7: "corner_outer_bottom_right",
-           13: "corner_outer_top_right",           15: "wall_fill"},
+    "BR": {7: "border_corner_inner_bottom_right", 15: "wall_fill"},
+    "T": {
+        12: "border_wall_horizontal_bottom",
+        13: "border_corner_outer_top_right",
+        14: "corner_outer_top_left",
+        15: "wall_fill",
+    },
+    "B": {
+        3: "border_wall_horizontal_top",
+        7: "border_corner_outer_bottom_right",
+        11: "corner_outer_bottom_left",
+        15: "wall_fill",
+    },
+    "L": {
+        10: "border_wall_vertical_right",
+        11: "corner_outer_bottom_left",
+        14: "border_corner_outer_top_left",
+        15: "wall_fill",
+    },
+    "R": {
+        5: "border_wall_vertical_left",
+        7: "corner_outer_bottom_right",
+        13: "corner_outer_top_right",
+        15: "wall_fill",
+    },
 }
 
 
-def _thick_arc(surf, color, cx, cy, r_out, thickness, start_deg, end_deg):
+def _thick_arc(surf: pygame.Surface,
+               color: tuple[int, int, int],
+               cx: float,
+               cy: float,
+               r_out: float,
+               thickness: float,
+               start_deg: int,
+               end_deg: int) -> None:
     r_in = max(0, r_out - thickness)
     outer, inner = [], []
     step = max(1, (end_deg - start_deg) // 20)
@@ -97,7 +117,7 @@ def _thick_arc(surf, color, cx, cy, r_out, thickness, start_deg, end_deg):
         pygame.draw.polygon(surf, color, poly)
 
 
-def _draw_pacman(col, row, scale):
+def _draw_pacman(col: int, row: int, scale: float) -> pygame.Surface:
     side = LARGE_BLOCK["cell_w"] * scale
     surf = pygame.Surface((side, side), pygame.SRCALPHA)
     cx, cy, r = side // 2, side // 2, side // 2 - 1
@@ -117,7 +137,7 @@ def _draw_pacman(col, row, scale):
     return surf
 
 
-def _draw_ghost(color, scale):
+def _draw_ghost(color: tuple[int, int, int], scale: float) -> pygame.Surface:
     side = LARGE_BLOCK["cell_w"] * scale
     surf = pygame.Surface((side, side), pygame.SRCALPHA)
 
@@ -136,7 +156,7 @@ def _draw_ghost(color, scale):
     return surf
 
 
-def _draw_frightened_ghost(scale, blinking=False):
+def _draw_frightened_ghost(scale: float, blinking: bool = False) -> pygame.Surface:
     color = (255, 255, 255) if blinking else (33, 33, 200)
     side = LARGE_BLOCK["cell_w"] * scale
     surf = _draw_ghost(color, scale)
@@ -145,11 +165,11 @@ def _draw_frightened_ghost(scale, blinking=False):
             my + (side // 14 if i % 2 == 0 else -side // 14))
            for i in range(5)]
     if len(pts) > 1:
-        pygame.draw.lines(surf, (255, 255, 255), False, pts, max(1, scale))
+        pygame.draw.lines(surf, (255, 255, 255), False, pts, max(1, round(scale)))
     return surf
 
 
-def _draw_eyes_only(scale):
+def _draw_eyes_only(scale: float) -> pygame.Surface:
     side = LARGE_BLOCK["cell_w"] * scale
     surf = pygame.Surface((side, side), pygame.SRCALPHA)
     er = max(2, side // 5)
@@ -160,7 +180,8 @@ def _draw_eyes_only(scale):
     return surf
 
 
-def _draw_large_fallback(macro_row, palette_index, col, row, scale):
+def _draw_large_fallback(macro_row: int, palette_index: int,
+                         col: int, row: int, scale: float) -> pygame.Surface:
     if macro_row == 1 and palette_index == 2:
         return _draw_pacman(col, row, scale)
     if macro_row == 1 and palette_index == 1:
@@ -179,7 +200,7 @@ def _draw_large_fallback(macro_row, palette_index, col, row, scale):
     return surf
 
 
-def _draw_maze_tile(col, row, scale):
+def _draw_maze_tile(col: int, row: int, scale: float) -> pygame.Surface:
     side = SMALL_BLOCK["cell_w"] * scale
     surf = pygame.Surface((side, side), pygame.SRCALPHA)
     name = _MAZE_COORDS_TO_NAME.get((col, row), "")
@@ -202,10 +223,10 @@ def _draw_maze_tile(col, row, scale):
         if "outer" in name:
             r = half + t // 2
             outer_arcs = {
-                "top_left":     (side, side, 180, 270),
-                "top_right":    (0,    side, 270, 360),
-                "bottom_left":  (side, 0,    90,  180),
-                "bottom_right": (0,    0,    0,   90),
+                "top_left": (side, side, 180, 270),
+                "top_right": (0, side, 270, 360),
+                "bottom_left": (side, 0, 90, 180),
+                "bottom_right": (0, 0, 0, 90),
             }
             for key, (cx, cy, s, e) in outer_arcs.items():
                 if key in name:
@@ -214,14 +235,22 @@ def _draw_maze_tile(col, row, scale):
 
         if "inner" in name:
             segments = {
-                "top_left":     (( half - t // 2, half - t // 2, side - half + t // 2, t),
-                                 ( half - t // 2, half - t // 2, t, side - half + t // 2)),
-                "top_right":    (( 0,             half - t // 2, half + t // 2,         t),
-                                 ( half - t // 2, half - t // 2, t, side - half + t // 2)),
-                "bottom_left":  (( half - t // 2, half - t // 2, side - half + t // 2, t),
-                                 ( half - t // 2, 0,             t, half + t // 2)),
-                "bottom_right": (( 0,             half - t // 2, half + t // 2,         t),
-                                 ( half - t // 2, 0,             t, half + t // 2)),
+                "top_left": (
+                    (half - t // 2, half - t // 2, side - half + t // 2, t),
+                    (half - t // 2, half - t // 2, t, side - half + t // 2),
+                ),
+                "top_right": (
+                    (0, half - t // 2, half + t // 2, t),
+                    (half - t // 2, half - t // 2, t, side - half + t // 2),
+                ),
+                "bottom_left": (
+                    (half - t // 2, half - t // 2, side - half + t // 2, t),
+                    (half - t // 2, 0, t, half + t // 2),
+                ),
+                "bottom_right": (
+                    (0, half - t // 2, half + t // 2, t),
+                    (half - t // 2, 0, t, half + t // 2),
+                ),
             }
             for key, (r1, r2) in segments.items():
                 if key in name:
@@ -234,7 +263,8 @@ def _draw_maze_tile(col, row, scale):
     return surf
 
 
-def _draw_small_fallback(macro_row, palette_index, col, row, scale):
+def _draw_small_fallback(macro_row: int, palette_index: int,
+                         col: int, row: int, scale: float) -> pygame.Surface:
     if (col, row) == _DOT_SMALL:
         side = SMALL_BLOCK["cell_w"] * scale
         surf = pygame.Surface((side, side), pygame.SRCALPHA)
@@ -258,17 +288,19 @@ def _draw_small_fallback(macro_row, palette_index, col, row, scale):
 
 class SpriteSheet:
 
-    def __init__(self, filename):
+    def __init__(self, filename: str) -> None:
         self._fallback = False
+        self.sheet: Optional[pygame.Surface] = None
         try:
             self.sheet = pygame.image.load(filename).convert()
         except (pygame.error, FileNotFoundError, OSError):
             print(f"Avertissement : asset introuvable « {filename} » — rendu de secours activé.")
             self._fallback = True
-            self.sheet = None
-        self._cache = {}
+        self._cache: dict[Any, pygame.Surface] = {}
 
-    def _extract(self, x, y, width, height, scale):
+    def _extract(self, x: float, y: float, width: int, height: int,
+                 scale: float) -> pygame.Surface:
+        assert self.sheet is not None
         image = pygame.Surface((width, height)).convert()
         image.blit(self.sheet, (0, 0), (x, y, width, height))
         image.set_colorkey((0, 0, 0))
@@ -277,12 +309,14 @@ class SpriteSheet:
         return image
 
     @staticmethod
-    def _cell_position(start_x, start_y, col, row, cfg):
+    def _cell_position(start_x: float, start_y: float,
+                       col: int, row: int, cfg: dict[str, Any]) -> tuple[float, float]:
         x = start_x + cfg["cell_margin"] + col * (cfg["cell_w"] + cfg["cell_margin"])
         y = start_y + cfg["cell_margin"] + row * (cfg["cell_h"] + cfg["cell_margin"])
         return x, y
 
-    def get_small_sprite(self, macro_row, palette_index, col, row, scale=1):
+    def get_small_sprite(self, macro_row: int, palette_index: int,
+                         col: int, row: int, scale: float = 1.0) -> pygame.Surface:
         key = ("small", macro_row, palette_index, col, row, scale)
         if key not in self._cache:
             if self._fallback:
@@ -296,7 +330,8 @@ class SpriteSheet:
                 )
         return self._cache[key]
 
-    def get_large_sprite(self, macro_row, palette_index, col, row, scale=1):
+    def get_large_sprite(self, macro_row: int, palette_index: int,
+                         col: int, row: int, scale: float = 1.0) -> pygame.Surface:
         key = ("large", macro_row, palette_index, col, row, scale)
         if key not in self._cache:
             if self._fallback:

@@ -1,17 +1,18 @@
 import random
+from typing import Any, Optional
 
 import pygame
 from collections import deque
 
-FRIGHTENED_DURATION = 5000   # ms total en mode effrayé
-FRIGHTENED_BLINK    = 1500   # ms avant la fin où le clignotement commence
-EATEN_DURATION      = 3000   # ms que dure l'état eaten (retour au spawn)
+FRIGHTENED_DURATION = 5000
+FRIGHTENED_BLINK = 1500
+EATEN_DURATION = 3000
 
 _DELTA = {
-    "right": ( 1,  0),
-    "left":  (-1,  0),
-    "up":    ( 0, -1),
-    "down":  ( 0,  1),
+    "right": (1, 0),
+    "left": (-1, 0),
+    "up": (0, -1),
+    "down": (0, 1),
 }
 
 _WALL_OFFSET = {
@@ -34,7 +35,10 @@ _PRIORITY = ["up", "left", "down", "right"]
 _DIR_FROM_DELTA = {v: k for k, v in _DELTA.items()}
 
 
-def _bfs(maze, col, row, forbidden_dir, target_col, target_row):
+def _bfs(
+    maze: Any, col: int, row: int,
+    forbidden_dir: Optional[str], target_col: int, target_row: int
+) -> list[tuple[int, int]]:
     """Chemin le plus court de (col,row) vers la cible via BFS.
 
     forbidden_dir : direction interdite au premier pas (règle anti-demi-tour).
@@ -44,8 +48,8 @@ def _bfs(maze, col, row, forbidden_dir, target_col, target_row):
     if col == target_col and row == target_row:
         return [(col, row)]
 
-    parent = {(col, row): None}
-    queue = deque()
+    parent: dict[tuple[int, int], Optional[tuple[int, int]]] = {(col, row): None}
+    queue: deque[tuple[int, int]] = deque()
 
     for d in _PRIORITY:
         if d == forbidden_dir:
@@ -64,7 +68,7 @@ def _bfs(maze, col, row, forbidden_dir, target_col, target_row):
         c, r = queue.popleft()
         if c == target_col and r == target_row:
             path = []
-            cur = (c, r)
+            cur: Optional[tuple[int, int]] = (c, r)
             while cur is not None:
                 path.append(cur)
                 cur = parent[cur]
@@ -84,7 +88,10 @@ def _bfs(maze, col, row, forbidden_dir, target_col, target_row):
 
 
 class Ghost:
-    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right", color="red"):
+    def __init__(
+        self, x: float = 0.0, y: float = 0.0, tile_px: int = 16,
+        speed: float = 2.0, direction: str = "right", color: str = "red"
+    ) -> None:
         self.x = float(x)
         self.y = float(y)
         self._tile = tile_px
@@ -103,51 +110,51 @@ class Ghost:
         self._pending_reverse = False
 
     @property
-    def col(self):
+    def col(self) -> int:
         return int(self.x // self._tile)
 
     @property
-    def row(self):
+    def row(self) -> int:
         return int(self.y // self._tile)
 
     @property
-    def rect(self):
+    def rect(self) -> pygame.Rect:
         h = self.size // 2
         return pygame.Rect(int(self.x) - h, int(self.y) - h, self.size, self.size)
 
-    def _tile_center(self):
+    def _tile_center(self) -> tuple[float, float]:
         """Centre pixel de la case courante (col, row)."""
         return (self.col * 2 + 1.5) * self.size, (self.row * 2 + 1.5) * self.size
 
-    def _can_enter(self, direction, maze):
+    def _can_enter(self, direction: str, maze: Any) -> bool:
         """True si la cellule voisine dans `direction` est accessible."""
         dcol, drow = _WALL_OFFSET[direction]
         gx = self.col * 2 + dcol
         gy = self.row * 2 + drow
         return not maze.is_wall(gx, gy)
 
-    def _target(self, pacman):
+    def _target(self, pacman: Any) -> tuple[int, int]:
         """Case cible du fantôme (par défaut : la case de Pac-Man)."""
         return pacman.col, pacman.row
 
-    def frighten(self, until):
+    def frighten(self, until: int) -> None:
         """Active le mode effrayé jusqu'au timestamp `until` (ms)."""
         if not self.eaten:
             self.frightened = True
             self.frightened_until = until
             self._pending_reverse = True
 
-    def is_blinking(self, now):
+    def is_blinking(self, now: int) -> bool:
         """True pendant la phase de clignotement (fin du mode effrayé)."""
         return self.frightened and now >= self.frightened_until - FRIGHTENED_BLINK
 
-    def compute_spawn_path(self, maze):
+    def compute_spawn_path(self, maze: Any) -> list[tuple[int, int]]:
         """Chemin BFS depuis la position courante jusqu'au spawn."""
         spawn_col = int(self.spawn_x // self._tile)
         spawn_row = int(self.spawn_y // self._tile)
         return _bfs(maze, self.col, self.row, _OPPOSITE[self.direction], spawn_col, spawn_row)
 
-    def eat(self, now, fps=60):
+    def eat(self, now: int, fps: int = 60) -> None:
         """Pac-Man mange ce fantôme : il rentre à son spawn en mode 'eaten'."""
         self.frightened = False
         self.frightened_until = 0
@@ -156,18 +163,18 @@ class Ghost:
         self._eaten_fps = fps
         self.eaten_speed = self.speed  # recalculé à chaque centre de case dans update()
 
-    def _clamp_target(self, col, row, maze):
+    def _clamp_target(self, col: int, row: int, maze: Any) -> tuple[int, int]:
         """Ramène (col, row) dans les bornes valides de la grille de passages."""
-        max_col = maze.width  // 2 - 1
+        max_col = maze.width // 2 - 1
         max_row = maze.height // 2 - 1
         return max(0, min(col, max_col)), max(0, min(row, max_row))
 
-    def compute_path(self, maze, pacman):
+    def compute_path(self, maze: Any, pacman: Any) -> list[tuple[int, int]]:
         """Chemin le plus court vers la cible via BFS."""
         tc, tr = self._clamp_target(*self._target(pacman), maze)
         return _bfs(maze, self.col, self.row, _OPPOSITE[self.direction], tc, tr)
 
-    def _choose_direction(self, maze, target_col, target_row):
+    def _choose_direction(self, maze: Any, target_col: int, target_row: int) -> str:
         """Premier pas du chemin BFS vers la cible (sans demi-tour)."""
         path = _bfs(maze, self.col, self.row, _OPPOSITE[self.direction],
                     target_col, target_row)
@@ -182,7 +189,7 @@ class Ghost:
                 return d
         return opposite  # cul-de-sac : demi-tour en dernier recours
 
-    def _choose_random_direction(self, maze):
+    def _choose_random_direction(self, maze: Any) -> str:
         """Direction aléatoire valide à l'intersection (sans demi-tour)."""
         opposite = _OPPOSITE[self.direction]
         valid = [d for d in _PRIORITY if d != opposite and self._can_enter(d, maze)]
@@ -190,7 +197,7 @@ class Ghost:
             return random.choice(valid)
         return opposite  # cul-de-sac : demi-tour contraint
 
-    def update(self, maze, pacman, now=0):
+    def update(self, maze: Any, pacman: Any, now: int = 0) -> None:
         # Expiration de l'état effrayé
         if self.frightened and now > 0 and now >= self.frightened_until:
             self.frightened = False
@@ -216,7 +223,7 @@ class Ghost:
             self.x = cx
 
         pos = self.x if dx else self.y
-        t_c = cx     if dx else cy
+        t_c = cx if dx else cy
 
         # Prochain centre devant : corriger si on a déjà dépassé le centre courant.
         d = dx + dy
@@ -284,30 +291,39 @@ class Ghost:
             self.y += dy * spd
 
         # Sécurité : empêche de sortir de la carte.
-        self.x = max(0.0, min(self.x, maze.width  * self.size - 1.0))
+        self.x = max(0.0, min(self.x, maze.width * self.size - 1.0))
         self.y = max(0.0, min(self.y, maze.height * self.size - 1.0))
 
 
 class Blinky(Ghost):
-    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+    def __init__(
+        self, x: float = 0.0, y: float = 0.0, tile_px: int = 16,
+        speed: float = 2.0, direction: str = "right"
+    ) -> None:
         super().__init__(x, y, tile_px, speed, direction, color="red")
 
 
 class Pinky(Ghost):
-    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+    def __init__(
+        self, x: float = 0.0, y: float = 0.0, tile_px: int = 16,
+        speed: float = 2.0, direction: str = "right"
+    ) -> None:
         super().__init__(x, y, tile_px, speed, direction, color="pink")
 
-    def _target(self, pacman):
+    def _target(self, pacman: Any) -> tuple[int, int]:
         dc, dr = _DELTA[pacman.direction]
         return pacman.col + 1 * dc, pacman.row + 1 * dr
 
 
 class Inky(Ghost):
-    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+    def __init__(
+        self, x: float = 0.0, y: float = 0.0, tile_px: int = 16,
+        speed: float = 2.0, direction: str = "right"
+    ) -> None:
         super().__init__(x, y, tile_px, speed, direction, color="cyan")
-        self.blinky = None  # set externally after construction
+        self.blinky: Optional[Ghost] = None
 
-    def _target(self, pacman):
+    def _target(self, pacman: Any) -> tuple[int, int]:
         if self.blinky is None:
             return pacman.col, pacman.row
         return (2 * pacman.col - self.blinky.col,
@@ -315,16 +331,18 @@ class Inky(Ghost):
 
 
 class Clyde(Ghost):
-    FLEE_RADIUS = 2  # cases
+    FLEE_RADIUS = 2
 
-    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+    def __init__(
+        self, x: float = 0.0, y: float = 0.0, tile_px: int = 16,
+        speed: float = 2.0, direction: str = "right"
+    ) -> None:
         super().__init__(x, y, tile_px, speed, direction, color="orange")
 
-    def _target(self, pacman):
+    def _target(self, pacman: Any) -> tuple[int, int]:
         dc = pacman.col - self.col
         dr = pacman.row - self.row
         dist = (dc * dc + dr * dr) ** 0.5
         if dist <= self.FLEE_RADIUS:
-            # Fuite : symétrique de Pac-Man par rapport à Clyde
             return 2 * self.col - pacman.col, 2 * self.row - pacman.row
         return pacman.col, pacman.row

@@ -15,6 +15,7 @@ Politique de robustesse (exigée par le sujet) :
 
 import json
 import sys
+from typing import Any
 
 DEFAULT_CONFIG_PATH = "config.json"
 
@@ -36,7 +37,7 @@ DEFAULTS = {
 }
 
 # Catégories de validation.
-_BOOL_KEYS   = ("invincible",)
+_BOOL_KEYS = ("invincible",)
 _STRING_KEYS = ("highscore_filename",)
 # Entier >= 0 toléré (un score nul ou une graine 0 sont valides).
 _NON_NEGATIVE_INT_KEYS = (
@@ -48,7 +49,7 @@ _POSITIVE_FLOAT_KEYS = ("pacman_speed", "ghost_speed")
 # Toutes les autres clés numériques exigent un entier strictement positif.
 
 
-def _strip_comments(text):
+def _strip_comments(text: str) -> str:
     """Retire les lignes de commentaire (# ou //) avant le parsing JSON.
 
     Seules les lignes dont le premier caractère non blanc est ``#`` ou
@@ -64,7 +65,7 @@ def _strip_comments(text):
     return "\n".join(kept)
 
 
-def _validate(key, value):
+def _validate(key: str, value: Any) -> Any:
     """Renvoie la valeur normalisée si elle est valide, sinon None.
 
     En Python ``bool`` est un sous-type de ``int`` : on le refuse
@@ -83,7 +84,7 @@ def _validate(key, value):
     return value if isinstance(value, int) and value > 0 else None
 
 
-def _normalize(data):
+def _normalize(data: dict[str, Any]) -> dict[str, Any]:
     """Construit une config complète depuis les défauts et les valeurs lues.
 
     Chaque clé connue est validée puis clampée si besoin. Les clés inconnues
@@ -103,7 +104,7 @@ def _normalize(data):
     return config
 
 
-def load_config(path=DEFAULT_CONFIG_PATH):
+def load_config(path: str = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
     """Lit, nettoie et valide le fichier de config ; renvoie un dict complet.
 
     Quitte proprement (message clair, sans traceback) si le fichier est

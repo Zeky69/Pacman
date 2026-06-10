@@ -4,6 +4,7 @@ Pour chaque coin de la grille, on calcule un masque (cf. `Maze.corner_mask`)
 puis on choisit la tuile à dessiner via les tables de correspondance.
 """
 
+from typing import Any, Optional
 import pygame
 
 from .settings import MAZE_TILE, COLORS, BORDER_MAPS, CORNER_MAP
@@ -13,7 +14,7 @@ from .sprites import FALLBACK_CORNER_MAP, FALLBACK_BORDER_MAPS
 class MazeView:
     """Dessine un `Maze` en tuiles à partir d'une sprite-sheet."""
 
-    def __init__(self, sheet, scale=4, color="blue"):
+    def __init__(self, sheet: Any, scale: int = 4, color: str = "blue") -> None:
         self.scale = scale
         self.tile_size = 8 * scale
         palette_index, macro_row = COLORS[color]
@@ -22,20 +23,21 @@ class MazeView:
             for name, coords in MAZE_TILE.items()
         }
         if getattr(sheet, "_fallback", False):
-            self._corner_map  = FALLBACK_CORNER_MAP
+            self._corner_map = FALLBACK_CORNER_MAP
             self._border_maps = FALLBACK_BORDER_MAPS
         else:
-            self._corner_map  = CORNER_MAP
+            self._corner_map = CORNER_MAP
             self._border_maps = BORDER_MAPS
 
-    def _active_map(self, maze, cx, cy):
+    def _active_map(self, maze: Any, cx: int, cy: int) -> Optional[dict[int, Any]]:
         """Table de tuiles applicable à ce coin (None hors limites)."""
         if cx == 0 or cx == maze.width or cy == 0 or cy == maze.height:
             return None
         border = maze.border_type(cx, cy)
         return self._border_maps[border] if border else self._corner_map
 
-    def draw(self, surface, maze, offset_x=0, offset_y=0):
+    def draw(self, surface: pygame.Surface, maze: Any,
+             offset_x: int = 0, offset_y: int = 0) -> None:
         """Dessine tout le labyrinthe sur `surface`."""
         half = self.tile_size // 2
         for cy in range(maze.height + 1):

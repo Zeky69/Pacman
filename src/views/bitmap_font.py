@@ -8,6 +8,7 @@ Police à chasse fixe : le texte est mis en majuscules et tout caractère
 inconnu laisse simplement un blanc (jamais d'erreur).
 """
 
+from typing import Any
 import pygame
 
 from .settings import ASCII_TILE, COLORS
@@ -15,13 +16,13 @@ from .settings import ASCII_TILE, COLORS
 GLYPH_PX = 8  # côté d'un glyphe dans la planche
 
 _COLOR_RGB = {
-    "white":  (255, 255, 255),
-    "yellow": (255, 255,   0),
-    "red":    (255,   0,   0),
-    "blue":   ( 33,  33, 255),
-    "cyan":   (  0, 255, 255),
-    "pink":   (255, 184, 255),
-    "orange": (255, 184,  81),
+    "white": (255, 255, 255),
+    "yellow": (255, 255, 0),
+    "red": (255, 0, 0),
+    "blue": (33, 33, 255),
+    "cyan": (0, 255, 255),
+    "pink": (255, 184, 255),
+    "orange": (255, 184, 81),
 }
 
 
@@ -31,7 +32,7 @@ class BitmapFont:
     Si la sprite-sheet est absente (_fallback), utilise une police système.
     """
 
-    def __init__(self, sheet, color="white", scale=4, spacing=0):
+    def __init__(self, sheet: Any, color: str = "white", scale: int = 4, spacing: int = 0) -> None:
         self._fallback = getattr(sheet, "_fallback", False)
         self._rgb = _COLOR_RGB.get(color, (255, 255, 255))
 
@@ -52,7 +53,7 @@ class BitmapFont:
                 for ch, (c, r) in ASCII_TILE.items()
             }
 
-    def measure(self, text):
+    def measure(self, text: str) -> int:
         if self._fallback:
             return self._sysfont.size(text.upper())[0]
         n = len(text)
@@ -60,7 +61,7 @@ class BitmapFont:
             return 0
         return n * self.cell + (n - 1) * self.spacing
 
-    def render(self, text):
+    def render(self, text: str) -> pygame.Surface:
         if self._fallback:
             return self._sysfont.render(text.upper(), True, self._rgb)
         text = text.upper()
@@ -73,7 +74,7 @@ class BitmapFont:
                 surf.blit(glyph, (i * step, 0))
         return surf
 
-    def draw(self, surface, text, **anchor):
+    def draw(self, surface: pygame.Surface, text: str, **anchor: Any) -> pygame.Rect:
         img = self.render(text)
         rect = img.get_rect(**anchor)
         surface.blit(img, rect)

@@ -8,7 +8,7 @@ sans enregistrer (retour au menu).
 
 import pygame
 
-from .scene import Scene
+from .scene import Scene, AppProtocol
 from ..views.bitmap_font import BitmapFont
 from ..highscores import save_highscore
 
@@ -22,7 +22,7 @@ ALLOWED = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 class WinScene(Scene):
     """YOU WON! : saisie du nom puis enregistrement dans le scoreboard."""
 
-    def __init__(self, app, score):
+    def __init__(self, app: AppProtocol, score: int) -> None:
         super().__init__(app)
         self.score = score
         self.name = ""
@@ -34,7 +34,7 @@ class WinScene(Scene):
         self.font = BitmapFont(app.sheet, "white", scale=max(1, h // 200))
         self.font_hi = BitmapFont(app.sheet, "yellow", scale=max(2, h // 120))
 
-    def _submit(self):
+    def _submit(self) -> None:
         """Enregistre le score (une seule fois) puis va aux highscores."""
         if self.saved:
             return
@@ -43,7 +43,7 @@ class WinScene(Scene):
         from .highscore_scene import HighscoreScene
         self.app.change_scene(HighscoreScene(self.app))
 
-    def handle_events(self, events, now):
+    def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
         for event in events:
             if event.type != pygame.KEYDOWN:
                 continue
@@ -59,7 +59,7 @@ class WinScene(Scene):
                 if ch in ALLOWED and len(self.name) < MAX_NAME:
                     self.name += ch
 
-    def draw(self, screen, now):
+    def draw(self, screen: pygame.Surface, now: int) -> None:
         screen.fill(BACKGROUND)
         w, h = screen.get_size()
 

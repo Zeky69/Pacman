@@ -6,7 +6,8 @@ Fermeture : Échap ou sélection de RESUME.
 
 import pygame
 
-from .scene import Scene
+from typing import Any
+from .scene import Scene, AppProtocol
 from ..views.bitmap_font import BitmapFont
 
 OVERLAY_COLOR = (0, 0, 0, 210)
@@ -27,7 +28,7 @@ _ITEMS = [
 class CheatScene(Scene):
     """Menu de triche superposé au jeu gelé."""
 
-    def __init__(self, app, game_scene):
+    def __init__(self, app: AppProtocol, game_scene: Any) -> None:
         super().__init__(app)
         self.game_scene = game_scene
         self.selected = 0
@@ -37,20 +38,20 @@ class CheatScene(Scene):
         self.overlay.fill(OVERLAY_COLOR)
 
         h = app.screen.get_height()
-        big   = max(2, h // 92)
+        big = max(2, h // 92)
         small = max(1, h // 200)
         self.title_font = BitmapFont(app.sheet, "yellow", scale=big)
-        self.font       = BitmapFont(app.sheet, "white",  scale=small)
-        self.font_sel   = BitmapFont(app.sheet, "yellow", scale=small)
-        self.font_on    = BitmapFont(app.sheet, "yellow", scale=small)
-        self.font_off   = BitmapFont(app.sheet, "red",    scale=small)
+        self.font = BitmapFont(app.sheet, "white", scale=small)
+        self.font_sel = BitmapFont(app.sheet, "yellow", scale=small)
+        self.font_on = BitmapFont(app.sheet, "yellow", scale=small)
+        self.font_off = BitmapFont(app.sheet, "red", scale=small)
 
     # ── navigation ────────────────────────────────────────────────────────────
 
-    def _resume(self):
+    def _resume(self) -> None:
         self.app.change_scene(self.game_scene)
 
-    def handle_events(self, events, now):
+    def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
         for event in events:
             if event.type != pygame.KEYDOWN:
                 continue
@@ -63,13 +64,13 @@ class CheatScene(Scene):
             elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                 self._activate()
 
-    def _activate(self):
+    def _activate(self) -> None:
         game = self.game_scene.game
         label, kind, attr = _ITEMS[self.selected]
 
         if kind == "back":
             self._resume()
-        elif kind == "toggle":
+        elif kind == "toggle" and attr is not None:
             if attr == "speed_boost":
                 game.speed_boost = not game.speed_boost
                 game.pacman.speed = game._pacman_speed * (2.5 if game.speed_boost else 1.0)
@@ -83,7 +84,7 @@ class CheatScene(Scene):
 
     # ── rendu ─────────────────────────────────────────────────────────────────
 
-    def draw(self, screen, now):
+    def draw(self, screen: pygame.Surface, now: int) -> None:
         screen.blit(self.snapshot, (0, 0))
         screen.blit(self.overlay, (0, 0))
         w, h = screen.get_size()
@@ -104,7 +105,7 @@ class CheatScene(Scene):
             y = start_y + i * gap
             font = self.font_sel if i == self.selected else self.font
 
-            if kind == "toggle":
+            if kind == "toggle" and attr is not None:
                 val = bool(getattr(self.game_scene.game, attr))
                 state_str = "- ON" if val else "- OFF"
                 state_font = self.font_on if val else self.font_off

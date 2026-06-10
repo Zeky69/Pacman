@@ -2,7 +2,7 @@
 
 import pygame
 
-from .scene import Scene
+from .scene import Scene, AppProtocol
 from ..views.bitmap_font import BitmapFont
 
 BACKGROUND = (0, 0, 0)
@@ -13,7 +13,7 @@ class MenuScene(Scene):
 
     OPTIONS = ("Start Game", "View Highscores", "Instructions", "Exit")
 
-    def __init__(self, app):
+    def __init__(self, app: AppProtocol) -> None:
         super().__init__(app)
         self.selected = 0
         h = app.screen.get_height()
@@ -23,7 +23,7 @@ class MenuScene(Scene):
         self.font = BitmapFont(app.sheet, "white", scale=small)
         self.font_sel = BitmapFont(app.sheet, "yellow", scale=small)
 
-    def handle_events(self, events, now):
+    def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
         for event in events:
             if event.type != pygame.KEYDOWN:
                 continue
@@ -36,7 +36,7 @@ class MenuScene(Scene):
             elif event.key == pygame.K_ESCAPE:
                 self.app.quit()
 
-    def _activate(self):
+    def _activate(self) -> None:
         """Déclenche l'action de l'option sélectionnée."""
         choice = self.OPTIONS[self.selected]
         if choice == "Start Game":
@@ -51,7 +51,7 @@ class MenuScene(Scene):
         elif choice == "Exit":
             self.app.quit()
 
-    def draw(self, screen, now):
+    def draw(self, screen: pygame.Surface, now: int) -> None:
         screen.fill(BACKGROUND)
         w, h = screen.get_size()
 

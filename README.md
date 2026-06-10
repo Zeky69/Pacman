@@ -77,7 +77,7 @@ On missing or invalid keys the game logs a warning to stderr, falls back to the 
 | `level_max_time` | int > 0 | `90` | Time limit per level in seconds |
 | `pacman_speed` | float > 0 | `1.0` | Base Pac-Man speed multiplier |
 | `ghost_speed` | float > 0 | `1.0` | Base ghost speed multiplier |
-| `godmode` | bool | `false` | Start with godmode (invincibility) enabled |
+| `invincible` | bool | `false` | Start with invincibility enabled |
 
 ### Minimal example (`config.json`)
 
@@ -230,6 +230,8 @@ src/
 ## Project Management
 
 ### Team organization
+
+Full project management documents (timeline, risk analysis, acceptance tests, blocking points) are available in [project_management/](project_management/).
 
 The project was developed by two contributors:
 

@@ -1,5 +1,6 @@
 """Gestion des entrées clavier."""
 
+from typing import Any, Optional
 import pygame
 
 KEY_TO_DIRECTION = {
@@ -18,7 +19,7 @@ KEY_TO_DIRECTION = {
 class InputController:
     """Traduit les événements clavier en actions sur le jeu."""
 
-    def apply(self, events, game):
+    def apply(self, events: list[Any], game: Any) -> Optional[str]:
         """Applique les entrées de mouvement de la frame.
 
         Renvoie l'action de scène demandée (``"pause"`` sur Échap) ou ``None``.

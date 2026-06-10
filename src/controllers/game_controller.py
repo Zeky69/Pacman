@@ -6,6 +6,7 @@ La transition entre écrans se fait via `change_scene`.
 """
 
 import sys
+from typing import Any
 import pygame
 
 FPS = 60
@@ -14,7 +15,7 @@ FPS = 60
 class GameController:
     """Tient la scène courante et fait tourner la boucle principale."""
 
-    def __init__(self, config):
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
         pygame.init()
         # Plein écran "sans bordure" : fenêtre à la taille du bureau, sans
@@ -35,16 +36,16 @@ class GameController:
         from ..scenes.menu_scene import MenuScene
         self.scene = MenuScene(self)
 
-    def change_scene(self, scene):
+    def change_scene(self, scene: Any) -> None:
         """Remplace la scène courante et appelle son `on_enter`."""
         self.scene = scene
         scene.on_enter()
 
-    def quit(self):
+    def quit(self) -> None:
         """Demande l'arrêt de la boucle principale."""
         self.running = False
 
-    def run(self):
+    def run(self) -> None:
         """Boucle principale : events -> update -> draw -> flip."""
         while self.running:
             now = pygame.time.get_ticks()

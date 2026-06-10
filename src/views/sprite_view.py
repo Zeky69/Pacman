@@ -1,6 +1,8 @@
 """Animation des sprites (Pac-Man, fantômes) à partir d'une sprite-sheet."""
 
+from typing import Any
 import pygame
+from .sprites import SpriteSheet
 
 
 class Animator:
@@ -11,7 +13,9 @@ class Animator:
         {"frame": [(col, row), ...], "x_flip", "y_flip", "loop_type", "rotation"}
     """
 
-    def __init__(self, data, sheet, palette_index=0, macro_row=0, size=32, speed=100):
+    def __init__(self, data: dict[str, Any], sheet: SpriteSheet,
+                 palette_index: int = 0, macro_row: int = 0,
+                 size: int = 32, speed: int = 100) -> None:
         self.loop_type = data.get("loop_type", "none")
         self.speed = speed              # ms entre deux frames
         self.index = 0
@@ -21,7 +25,9 @@ class Animator:
         self.image = self.frames[self.index]
 
     @staticmethod
-    def _build_frames(data, sheet, palette_index, macro_row, size):
+    def _build_frames(data: dict[str, Any], sheet: SpriteSheet,
+                      palette_index: int, macro_row: int,
+                      size: int) -> list[pygame.Surface]:
         """Extrait, transforme (flip/rotation) et met à la taille `size` (px)."""
         frames = []
         for col, row in data["frame"]:
@@ -38,12 +44,12 @@ class Animator:
             frames += [frames[i] for i in range(len(frames) - 2, 0, -1)]
         return frames
 
-    def reset(self):
+    def reset(self) -> None:
         self.index = 0
         self.finished = False
         self.image = self.frames[self.index]
 
-    def update(self, now):
+    def update(self, now: int) -> None:
         """Avance l'animation si le délai `speed` est écoulé."""
         if now - self.last_update <= self.speed:
             return
@@ -57,7 +63,7 @@ class Animator:
             self.index = (self.index + 1) % len(self.frames)
         self.image = self.frames[self.index]
 
-    def draw(self, surface, x, y):
+    def draw(self, surface: pygame.Surface, x: float, y: float) -> None:
         """Dessine la frame courante centrée sur (x, y)."""
         surface.blit(self.image, self.image.get_rect(center=(x, y)))
 
@@ -65,12 +71,14 @@ class Animator:
 class StaticSprite:
     """Sprite fixe sans animation (fruits, pac-gommes)."""
 
-    def __init__(self, col, row, sheet, is_large=True, scale=3,
-                 macro_row=0, palette_index=0):
+    def __init__(self, col: int, row: int,
+                 sheet: SpriteSheet, is_large: bool = True,
+                 scale: float = 3,
+                 macro_row: int = 0, palette_index: int = 0):
         if is_large:
             self.image = sheet.get_large_sprite(macro_row, palette_index, col, row, scale)
         else:
             self.image = sheet.get_small_sprite(macro_row, palette_index, col, row, scale)
 
-    def draw(self, surface, x, y):
+    def draw(self, surface: pygame.Surface, x: float, y: float) -> None:
         surface.blit(self.image, self.image.get_rect(center=(x, y)))

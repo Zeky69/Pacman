@@ -1,10 +1,12 @@
 """Vue principale : assemble le rendu du labyrinthe et des entités."""
 
+from typing import Any, Optional
 import pygame
 
 from ..models.pacman import Pacman
 from ..models.ghost import Inky, Blinky, Clyde
-from ..models.game import HALF
+from ..models.game import HALF, Game
+from ..models.maze import Maze
 from .sprites import SpriteSheet
 from .maze_view import MazeView
 from .sprite_view import Animator
@@ -14,8 +16,8 @@ from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES,
 ASSET_PATH = "assets/default.png"
 BACKGROUND = (0, 0, 0)
 
-DEBUG_SHOW_PATHS   = False   # chemins BFS de chaque fantôme
-DEBUG_SHOW_TARGETS = False   # visualisations des cibles (Inky line, Clyde radius)
+DEBUG_SHOW_PATHS = False
+DEBUG_SHOW_TARGETS = False
 
 # Côté d'une cellule de base (avant mise à l'échelle), en pixels.
 BASE_CELL = 8
@@ -35,7 +37,7 @@ _PATH_COLORS = {
 class GameView:
     """Charge les ressources graphiques et dessine l'état du jeu."""
 
-    def __init__(self, screen, maze):
+    def __init__(self, screen: pygame.Surface, maze: Maze) -> None:
         self.screen = screen
         self.sheet = SpriteSheet(ASSET_PATH)
         screen_w, screen_h = screen.get_size()
@@ -60,7 +62,7 @@ class GameView:
         tile = self.maze_view.tile_size
         maze_w, maze_h = maze.width * tile, maze.height * tile
         self.fit = min(screen_w / maze_w, avail_h / maze_h)
-        self._maze = None
+        self._maze: Optional[Maze] = None
         self._rebuild_maze_surface(maze)
 
         # 4. Centrage : horizontal sur l'écran, vertical entre les bandes HUD.
@@ -79,17 +81,17 @@ class GameView:
         sc, sr = GOMMES_TILES["small"]
         bc, br = GOMMES_TILES["big"]
         raw_small = self.sheet.get_small_sprite(0, 0, sc, sr, 1)
-        raw_big   = self.sheet.get_small_sprite(0, 0, bc, br, 1)
+        raw_big = self.sheet.get_small_sprite(0, 0, bc, br, 1)
         s_size = max(2, round(self.cell_pitch * 0.5))
         b_size = max(4, round(self.cell_pitch * 0.6))
-        self._gom_img  = pygame.transform.scale(raw_small, (s_size, s_size))
-        self._sgom_img = pygame.transform.scale(raw_big,   (b_size, b_size))
+        self._gom_img = pygame.transform.scale(raw_small, (s_size, s_size))
+        self._sgom_img = pygame.transform.scale(raw_big, (b_size, b_size))
 
-        self._animators = {}  # cache : (id(entity), direction) -> Animator
+        self._animators: dict[Any, Animator] = {}  # cache : (id(entity), direction) -> Animator
 
         # Sprites de score (mangé un fantôme) pré-scalés à la taille d'une case.
         score_size = max(8, self.tile_px)
-        self._score_imgs = {}
+        self._score_imgs: dict[str, pygame.Surface] = {}
         for label, (sc, sr) in SCORE_SPRITE.items():
             raw = self.sheet.get_large_sprite(0, 0, sc, sr, 1)
             self._score_imgs[label] = pygame.transform.scale(raw, (score_size, score_size))
@@ -107,7 +109,7 @@ class GameView:
         self._life_icon = pygame.transform.scale(
             life_raw, (life_size, life_size))
 
-    def _rebuild_maze_surface(self, maze):
+    def _rebuild_maze_surface(self, maze: Maze) -> None:
         """(Re)génère le fond pré-rendu du labyrinthe pour `maze`.
 
         Appelée à l'init et à chaque changement de niveau : comme la
@@ -125,12 +127,12 @@ class GameView:
         )
         self._maze = maze
 
-    def _animator_for(self, entity, now=0):
+    def _animator_for(self, entity: Any, now: int = 0) -> Animator:
         """Renvoie (en le créant au besoin) l'animateur courant de l'entité."""
         if isinstance(entity, Pacman):
             if entity.dead:
                 # dead_until est unique à chaque mort → animateur remis à zéro automatiquement
-                key = (id(entity), "dead", entity.direction, entity.dead_until)
+                key: Any = (id(entity), "dead", entity.direction, entity.dead_until)
                 if key not in self._animators:
                     data = PACMAN_ANIMATIONS[f"death_{entity.direction}"]
                     palette_index, macro_row = PACMAN_PALETTE
@@ -182,13 +184,13 @@ class GameView:
             )
         return self._animators[key]
 
-    def _tile_screen_pos(self, col, row):
+    def _tile_screen_pos(self, col: int, row: int) -> tuple[int, int]:
         """Convertit une case originale (col, row) en coordonnées écran."""
         x = self.offset_x + round((col * 2 + 1.5) * self.cell_pitch)
         y = self.offset_y + round((row * 2 + 1.5) * self.cell_pitch)
         return x, y
 
-    def _draw_ghost_paths(self, game):
+    def _draw_ghost_paths(self, game: Game) -> None:
         """Dessine le chemin prévu de chaque fantôme avec sa couleur."""
         overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
         for ghost in game.ghosts:
@@ -200,16 +202,16 @@ class GameView:
             pygame.draw.lines(overlay, (*rgb, 160), False, points, 4)
         self.screen.blit(overlay, (0, 0))
 
-    def _entity_screen_pos(self, entity):
+    def _entity_screen_pos(self, entity: Any) -> tuple[int, int]:
         """Position écran (centre) d'une entité depuis ses coordonnées modèle."""
         x = self.offset_x + round(entity.x * self.model_scale)
         y = self.offset_y + round(entity.y * self.model_scale)
         return x, y
 
-    def _draw_inky_line(self, game):
+    def _draw_inky_line(self, game: Game) -> None:
         """Droite Blinky–Pac-Man étendue jusqu'à la cible d'Inky."""
         blinky = next((g for g in game.ghosts if isinstance(g, Blinky)), None)
-        inky   = next((g for g in game.ghosts if isinstance(g, Inky)),   None)
+        inky = next((g for g in game.ghosts if isinstance(g, Inky)), None)
         if blinky is None or inky is None:
             return
 
@@ -226,7 +228,7 @@ class GameView:
         pygame.draw.circle(overlay, (0,   255, 255, 220), (tx, ty), 6)   # cible Inky
         self.screen.blit(overlay, (0, 0))
 
-    def _draw_ghost_targets(self, game):
+    def _draw_ghost_targets(self, game: Game) -> None:
         """Petit carré coloré sur la case cible de chaque fantôme."""
         overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
         sq = max(4, round(self.cell_pitch * 0.4))
@@ -238,7 +240,7 @@ class GameView:
             pygame.draw.rect(overlay, (*rgb, 220), rect)
         self.screen.blit(overlay, (0, 0))
 
-    def _draw_clyde_radius(self, game):
+    def _draw_clyde_radius(self, game: Game) -> None:
         """Cercle de rayon FLEE_RADIUS cases autour de Clyde (orange)."""
         clyde = next((g for g in game.ghosts if isinstance(g, Clyde)), None)
         if clyde is None:
@@ -249,7 +251,7 @@ class GameView:
         pygame.draw.circle(overlay, (255, 184, 81, 180), (px, py), radius_px, 2)
         self.screen.blit(overlay, (0, 0))
 
-    def _draw_score_popups(self, game):
+    def _draw_score_popups(self, game: Game) -> None:
         """Affiche les popups de score au-dessus de l'endroit où le fantôme a été mangé."""
         for popup in game.score_popups:
             label = str(popup['value'])
@@ -261,7 +263,7 @@ class GameView:
             else:
                 self.popup_font.draw(self.screen, label, center=(x, y))
 
-    def _draw_hud(self, game):
+    def _draw_hud(self, game: Game) -> None:
         """Barre du haut (score / level / time) + vies en bas (icônes)."""
         w, h = self.screen.get_size()
         top_cy = self.hud_top // 2
@@ -307,8 +309,7 @@ class GameView:
             font.draw(self.screen, label, midright=(cx, y))
             cx -= font.measure(label) + 16
 
-
-    def render(self, game, now):
+    def render(self, game: Game, now: int) -> None:
         """Dessine une frame complète à partir de l'état du jeu."""
         # Changement de niveau (nouveau labyrinthe) : re-rendre le fond et
         # purger le cache d'animateurs. Les entités ont été recréées et leurs

@@ -1,19 +1,18 @@
+from typing import Any
 import pygame
 
 _DELTA = {
-    "right": ( 1,  0),
-    "left":  (-1,  0),
-    "up":    ( 0, -1),
-    "down":  ( 0,  1),
+    "right": (1, 0),
+    "left": (-1, 0),
+    "up": (0, -1),
+    "down": (0, 1),
 }
 
-# Offsets dans la grille doublée pour tester le mur entre la case courante
-# et la case voisine dans chaque direction.
 _WALL_OFFSET = {
-    "right": ( 2,  1),
-    "left":  ( 0,  1),
-    "down":  ( 1,  2),
-    "up":    ( 1,  0),
+    "right": (2, 1),
+    "left": (0, 1),
+    "down": (1, 2),
+    "up": (1, 0),
 }
 
 
@@ -21,7 +20,10 @@ DEATH_DURATION = 1500  # ms de gel après la mort avant le respawn
 
 
 class Pacman:
-    def __init__(self, x=0.0, y=0.0, tile_px=16, speed=2.0, direction="right"):
+    def __init__(
+        self, x: float = 0.0, y: float = 0.0, tile_px: int = 16,
+        speed: float = 2.0, direction: str = "right"
+    ) -> None:
         self.x = float(x)
         self.y = float(y)
         self._tile = tile_px        # case d'origine en pixels (= 16)
@@ -36,42 +38,47 @@ class Pacman:
         self.dead = False
         self.dead_until = 0
         self.moved = False
-        self.cells_visited = []  # positions (x, y) franchies ce frame, dans l'ordre
+        # positions (x, y) franchies ce frame, dans l'ordre
+        self.cells_visited: list[tuple[float, float]] = []
 
     # ── position dans la grille d'origine ────────────────────────────────────
 
     @property
-    def col(self):
+    def col(self) -> int:
         return int(self.x // self._tile)
 
     @property
-    def row(self):
+    def row(self) -> int:
         return int(self.y // self._tile)
 
     @property
-    def next_col(self):
-        if self.direction == "right": return self.col + 1
-        if self.direction == "left":  return self.col - 1
+    def next_col(self) -> int:
+        if self.direction == "right":
+            return self.col + 1
+        if self.direction == "left":
+            return self.col - 1
         return self.col
 
     @property
-    def next_row(self):
-        if self.direction == "down": return self.row + 1
-        if self.direction == "up":   return self.row - 1
+    def next_row(self) -> int:
+        if self.direction == "down":
+            return self.row + 1
+        if self.direction == "up":
+            return self.row - 1
         return self.row
 
     @property
-    def rect(self):
+    def rect(self) -> pygame.Rect:
         h = self.size // 2
         return pygame.Rect(int(self.x) - h, int(self.y) - h, self.size, self.size)
 
     # ── helpers ───────────────────────────────────────────────────────────────
 
-    def _tile_center(self):
+    def _tile_center(self) -> tuple[float, float]:
         """Centre pixel de la case courante (col, row)."""
         return (self.col * 2 + 1.5) * self.size, (self.row * 2 + 1.5) * self.size
 
-    def _can_enter(self, direction, maze):
+    def _can_enter(self, direction: str, maze: Any) -> bool:
         """True si la cellule voisine dans `direction` est accessible."""
         dcol, drow = _WALL_OFFSET[direction]
         gx = self.col * 2 + dcol
@@ -80,11 +87,11 @@ class Pacman:
 
     # ── mort / respawn ────────────────────────────────────────────────────────
 
-    def die(self, now):
+    def die(self, now: int) -> None:
         self.dead = True
         self.dead_until = now + DEATH_DURATION
 
-    def respawn(self):
+    def respawn(self) -> None:
         self.x = self.spawn_x
         self.y = self.spawn_y
         self.direction = self.spawn_direction
@@ -94,7 +101,7 @@ class Pacman:
 
     # ── mouvement (style arcade original) ────────────────────────────────────
 
-    def update(self, maze):
+    def update(self, maze: Any) -> None:
         start_x, start_y = self.x, self.y
         self.cells_visited = [(self.x, self.y)]  # position de départ du frame
         if self.dead:
@@ -125,8 +132,8 @@ class Pacman:
             # Prochain centre devant : si on a déjà dépassé le centre de la case
             # courante, viser le centre de la case suivante dans notre direction.
             pos = self.x if dx else self.y
-            t_c = cx     if dx else cy
-            d   = dx + dy  # ±1
+            t_c = cx if dx else cy
+            d = dx + dy
             if d > 0 and pos > t_c + 1e-6:
                 t_c += self._tile
             elif d < 0 and pos < t_c - 1e-6:
@@ -169,7 +176,7 @@ class Pacman:
                 budget = 0
 
         # 3. Sécurité : empêche de sortir de la carte.
-        self.x = max(0.0, min(self.x, maze.width  * self.size - 1.0))
+        self.x = max(0.0, min(self.x, maze.width * self.size - 1.0))
         self.y = max(0.0, min(self.y, maze.height * self.size - 1.0))
 
         # Position finale toujours présente.

@@ -10,7 +10,7 @@ from .config import load_config
 from .controllers.game_controller import GameController
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         prog = sys.argv[0] if sys.argv else "pac-man.py"
         sys.exit(f"Usage : uv run {prog} <config.json>\n"

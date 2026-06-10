@@ -10,9 +10,10 @@ la lecture renvoie une liste vide et l'affichage ne plante jamais.
 """
 
 import json
+from typing import Any
 
 
-def _valid(name, score):
+def _valid(name: Any, score: Any) -> bool:
     """Vrai si (name, score) est une entrée de score exploitable."""
     return (isinstance(name, str)
             and isinstance(score, int)
@@ -20,7 +21,7 @@ def _valid(name, score):
             and score >= 0)
 
 
-def _normalize(data):
+def _normalize(data: Any) -> list[tuple[Any, Any]]:
     """Renvoie ``[(name, score), ...]`` depuis un format liste OU dict.
 
     - liste d'objets ``{"name": ..., "score": ...}`` (format de référence) ;
@@ -41,7 +42,7 @@ def _normalize(data):
     return entries
 
 
-def _read(path):
+def _read(path: str) -> Any:
     """Charge le JSON brut du fichier, ou ``None`` en cas d'erreur."""
     try:
         with open(path, encoding="utf-8") as f:
@@ -50,7 +51,7 @@ def _read(path):
         return None
 
 
-def load_highscores(path, limit=10):
+def load_highscores(path: str, limit: int = 10) -> list[tuple[str, int]]:
     """Renvoie ``[(name, score), ...]`` trié par score décroissant.
 
     Les entrées mal formées sont ignorées. La liste est tronquée à `limit`.
@@ -60,7 +61,7 @@ def load_highscores(path, limit=10):
     return entries[:limit]
 
 
-def save_highscore(path, name, score, limit=100):
+def save_highscore(path: str, name: str, score: int, limit: int = 100) -> list[tuple[str, int]]:
     """Ajoute ``(name, score)`` au fichier et le réécrit (format liste).
 
     Le fichier est lu, fusionné avec la nouvelle entrée, trié par score

@@ -6,9 +6,14 @@ On la transforme en une grille "doublée" où 1 = mur et 0 = passage, ce qui
 permet collisions et auto-tiling.
 """
 
+from __future__ import annotations
 from collections import deque
+from typing import TYPE_CHECKING, Optional
 
 from mazegenerator import MazeGenerator
+
+if TYPE_CHECKING:
+    import pygame
 
 # Bits de direction d'un mur (identiques à l'encodage de MazeGenerator).
 NORTH = 1
@@ -20,7 +25,8 @@ WEST = 8
 class Maze:
     """Grille de murs du labyrinthe (1 = mur, 0 = passage)."""
 
-    def __init__(self, cols=20, rows=20, seed=0, perfect=False):
+    def __init__(self, cols: int = 20, rows: int = 20,
+                 seed: int = 0, perfect: bool = False) -> None:
         generator = MazeGenerator(size=(cols, rows), seed=seed, perfect=perfect)
         self.entry = generator.maze_entry          # (col, row) d'entrée
         self.exit = generator.maze_exit            # (col, row) de sortie
@@ -30,6 +36,7 @@ class Maze:
         self.height = len(self.grid)
         self.width = len(self.grid[0])
 
+        self.wall_rects: list[pygame.Rect] = []
         reachable = self._reachable_cells()
         self.pacgums: set[tuple[int, int]] = {
             (gx, gy)
@@ -41,7 +48,7 @@ class Maze:
         self.pacgums -= self.super_pacgums
 
     @staticmethod
-    def _build_wall_grid(code_grid):
+    def _build_wall_grid(code_grid: list[list[int]]) -> list[list[int]]:
         """Convertit la grille de codes en grille doublée (murs = 1)."""
         h = len(code_grid)
         w = len(code_grid[0])
@@ -52,15 +59,19 @@ class Maze:
                 cell = code_grid[y][x]
                 gx, gy = x * 2 + 1, y * 2 + 1
 
-                grid[gy][gx] = 0  # le centre de la cellule est toujours un passage
-                if not (cell & NORTH) and y > 0:     grid[gy - 1][gx] = 0
-                if not (cell & EAST) and x < w - 1:   grid[gy][gx + 1] = 0
-                if not (cell & SOUTH) and y < h - 1:  grid[gy + 1][gx] = 0
-                if not (cell & WEST) and x > 0:       grid[gy][gx - 1] = 0
+                grid[gy][gx] = 0
+                if not (cell & NORTH) and y > 0:
+                    grid[gy - 1][gx] = 0
+                if not (cell & EAST) and x < w - 1:
+                    grid[gy][gx + 1] = 0
+                if not (cell & SOUTH) and y < h - 1:
+                    grid[gy + 1][gx] = 0
+                if not (cell & WEST) and x > 0:
+                    grid[gy][gx - 1] = 0
         return grid
 
     def _reachable_cells(self) -> set[tuple[int, int]]:
-        """BFS depuis l'entrée du labyrinthe — exclut les cases enclavées (ex: le '42' gravé par MazeGenerator)."""
+        """BFS depuis l'entrée — exclut les cases enclavées (ex: le '42' de MazeGenerator)."""
         start_gx = self.entry[0] * 2 + 1
         start_gy = self.entry[1] * 2 + 1
         visited: set[tuple[int, int]] = set()
@@ -94,17 +105,17 @@ class Maze:
             available.discard(best)
         return result
 
-    def cell_to_grid(self, col, row):
+    def cell_to_grid(self, col: int, row: int) -> tuple[int, int]:
         """Case d'origine (col, row) -> index (gx, gy) de son centre dans la grille doublée."""
         return col * 2 + 1, row * 2 + 1
 
-    def is_wall(self, gx, gy):
+    def is_wall(self, gx: int, gy: int) -> bool:
         """True si la case (gx, gy) est un mur (hors-grille = mur)."""
         if 0 <= gx < self.width and 0 <= gy < self.height:
             return self.grid[gy][gx] == 1
         return True
 
-    def corner_mask(self, cx, cy):
+    def corner_mask(self, cx: int, cy: int) -> int:
         """Masque 4 bits des murs autour du coin (cx, cy) : NW NE SW SE."""
         nw = self.is_wall(cx - 1, cy - 1)
         ne = self.is_wall(cx,     cy - 1)
@@ -112,19 +123,27 @@ class Maze:
         se = self.is_wall(cx,     cy)
         return (nw << 3) | (ne << 2) | (sw << 1) | se
 
-    def border_type(self, cx, cy):
+    def border_type(self, cx: int, cy: int) -> Optional[str]:
         """Renvoie le type de bordure ('TL', 'T', 'L'...) ou None si intérieur."""
         on_t = cy == 1
         on_b = cy == self.height - 1
         on_l = cx == 1
         on_r = cx == self.width - 1
 
-        if on_t and on_l: return "TL"
-        if on_t and on_r: return "TR"
-        if on_b and on_l: return "BL"
-        if on_b and on_r: return "BR"
-        if on_t: return "T"
-        if on_b: return "B"
-        if on_l: return "L"
-        if on_r: return "R"
+        if on_t and on_l:
+            return "TL"
+        if on_t and on_r:
+            return "TR"
+        if on_b and on_l:
+            return "BL"
+        if on_b and on_r:
+            return "BR"
+        if on_t:
+            return "T"
+        if on_b:
+            return "B"
+        if on_l:
+            return "L"
+        if on_r:
+            return "R"
         return None
