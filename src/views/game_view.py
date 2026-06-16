@@ -11,7 +11,10 @@ from .sprites import SpriteSheet
 from .maze_view import MazeView
 from .sprite_view import Animator
 from .bitmap_font import BitmapFont
-from .settings import PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES, SCORE_SPRITE, FOOD
+from .settings import (
+    PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES, SCORE_SPRITE,
+    FOOD, PACMAN_SECRET_FRAMES, SECRET_SPRITES_DIR,
+)
 
 ASSET_PATH = "assets/default.png"
 BACKGROUND = (0, 0, 0)
@@ -37,9 +40,12 @@ _PATH_COLORS = {
 class GameView:
     """Charge les ressources graphiques et dessine l'état du jeu."""
 
-    def __init__(self, screen: pygame.Surface, maze: Maze) -> None:
+    def __init__(self, screen: pygame.Surface, maze: Maze,
+                 secret: bool = False) -> None:
         self.screen = screen
-        self.sheet = SpriteSheet(ASSET_PATH)
+        self.secret = secret
+        self.sheet = SpriteSheet(
+            ASSET_PATH, secret_dir=SECRET_SPRITES_DIR if secret else None)
         screen_w, screen_h = screen.get_size()
 
         # Bandes réservées au HUD (haut = score/level/time, bas = vies).
@@ -113,7 +119,12 @@ class GameView:
         # Police réduite pour les popups de score en mode ASCII (valeur non-standard).
         self.popup_font = BitmapFont(self.sheet, "yellow", scale=max(1, hud_s - 2))
         pac_palette, pac_macro = PACMAN_PALETTE
-        life_raw = self.sheet.get_large_sprite(pac_macro, pac_palette, 6, 3, 1)
+        life_raw = None
+        if self.secret:
+            life_raw = self.sheet.load_secret_frame(
+                PACMAN_SECRET_FRAMES["right"]["files"][0])
+        if life_raw is None:
+            life_raw = self.sheet.get_large_sprite(pac_macro, pac_palette, 6, 3, 1)
         life_size = max(12, int(self.hud_bottom * 0.7))
         self._life_icon = pygame.transform.scale(
             life_raw, (life_size, life_size))
@@ -143,18 +154,25 @@ class GameView:
                 # dead_until est unique à chaque mort → animateur remis à zéro automatiquement
                 key: Any = (id(entity), "dead", entity.direction, entity.dead_until)
                 if key not in self._animators:
-                    data = PACMAN_ANIMATIONS[f"death_{entity.direction}"]
+                    death_key = f"death_{entity.direction}"
+                    data = PACMAN_ANIMATIONS[death_key]
                     palette_index, macro_row = PACMAN_PALETTE
+                    secret = (PACMAN_SECRET_FRAMES.get(death_key)
+                              if self.secret else None)
                     self._animators[key] = Animator(
-                        data, self.sheet, palette_index, macro_row, size=self.tile_px
+                        data, self.sheet, palette_index, macro_row,
+                        size=self.tile_px, secret=secret
                     )
                 return self._animators[key]
             key = (id(entity), entity.direction)
             if key not in self._animators:
                 data = PACMAN_ANIMATIONS[entity.direction]
                 palette_index, macro_row = PACMAN_PALETTE
+                secret = (PACMAN_SECRET_FRAMES.get(entity.direction)
+                          if self.secret else None)
                 self._animators[key] = Animator(
-                    data, self.sheet, palette_index, macro_row, size=self.tile_px
+                    data, self.sheet, palette_index, macro_row,
+                    size=self.tile_px, secret=secret
                 )
             return self._animators[key]
 

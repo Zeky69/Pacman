@@ -33,7 +33,7 @@ PACMAN_ANIMATIONS = {
             (0, 4), (1, 4), (2, 4), (3, 4), (4, 4), (5, 4),
         ],
         'x_flip': False,
-        'y_flip': False,
+        'y_flip': True,
         'loop_type': 'once',
         'rotation': 0,
     },
@@ -43,7 +43,7 @@ PACMAN_ANIMATIONS = {
             (0, 4), (1, 4), (2, 4), (3, 4), (4, 4), (5, 4),
         ],
         'x_flip': False,
-        'y_flip': True,
+        'y_flip': False,
         'loop_type': 'once',
         'rotation': 0,
     },
@@ -67,6 +67,37 @@ PACMAN_ANIMATIONS = {
         'loop_type': 'once',
         'rotation': 90,
     },
+}
+
+# Mode « secret » : textures dédiées chargées depuis des PNG individuels.
+SECRET_SPRITES_DIR = "assets/sprites"
+
+# Seule la frame « droite » existe : on dérive les autres directions par
+# miroir / rotation (pygame : rotation positive = sens antihoraire).
+# Chaque entrée donne les fichiers (un par frame) + la transformation à
+# appliquer. Toute frame dont le fichier manque retombe sur la planche.
+_PACMAN_RIGHT_FRAMES = ['pacman-right-1.png', 'pacman-right-2.png', 'pacman-right-3.png']
+
+# La mort utilise les mêmes PNG pour toutes les directions, sans miroir ni
+# rotation. L'animation par défaut compte 12 frames : on répète la dernière
+# pour couvrir toutes les frames sans retomber sur la planche par défaut.
+_PACMAN_DEATH_FRAMES = [
+    'pacman-death-1.png', 'pacman-death-2.png', 'pacman-death-3.png',
+    'pacman-death-4.png', 'pacman-death-5.png', 'pacman-death-6.png',
+    'pacman-death-7.png', 'pacman-death-8.png',
+    'pacman-death-8.png', 'pacman-death-8.png', 'pacman-death-8.png',
+    'pacman-death-8.png',
+]
+
+PACMAN_SECRET_FRAMES = {
+    'right': {'files': _PACMAN_RIGHT_FRAMES, 'x_flip': False, 'y_flip': False, 'rotation': 0},
+    'left':  {'files': _PACMAN_RIGHT_FRAMES, 'x_flip': True,  'y_flip': False, 'rotation': 0},
+    'up':    {'files': _PACMAN_RIGHT_FRAMES, 'x_flip': False, 'y_flip': False, 'rotation': 90},
+    'down':  {'files': _PACMAN_RIGHT_FRAMES, 'x_flip': False, 'y_flip': False, 'rotation': -90},
+    'death_up':    {'files': _PACMAN_DEATH_FRAMES, 'x_flip': False, 'y_flip': False, 'rotation': 0},
+    'death_down':  {'files': _PACMAN_DEATH_FRAMES, 'x_flip': False, 'y_flip': False, 'rotation': 0},
+    'death_right': {'files': _PACMAN_DEATH_FRAMES, 'x_flip': False, 'y_flip': False, 'rotation': 0},
+    'death_left':  {'files': _PACMAN_DEATH_FRAMES, 'x_flip': False, 'y_flip': False, 'rotation': 0},
 }
 
 GHOST_ANIMATIONS = {

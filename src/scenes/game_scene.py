@@ -13,7 +13,8 @@ class GameScene(Scene):
     def __init__(self, app: AppProtocol) -> None:
         super().__init__(app)
         self.game = Game(app.config)
-        self.view = GameView(app.screen, self.game.maze)
+        self.view = GameView(app.screen, self.game.maze,
+                             secret=app.config.get("secret", False))
         self.input = InputController()
 
     def handle_events(self, events: list[pygame.event.Event], now: int) -> None:

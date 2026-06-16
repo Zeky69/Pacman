@@ -34,10 +34,11 @@ DEFAULTS = {
     "pacman_speed": 1.0,
     "ghost_speed": 1.0,
     "invincible": False,
+    "secret": False,
 }
 
 # Catégories de validation.
-_BOOL_KEYS = ("invincible",)
+_BOOL_KEYS = ("invincible", "secret")
 _STRING_KEYS = ("highscore_filename",)
 # Entier >= 0 toléré (un score nul ou une graine 0 sont valides).
 _NON_NEGATIVE_INT_KEYS = (

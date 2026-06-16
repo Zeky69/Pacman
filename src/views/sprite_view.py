@@ -1,6 +1,6 @@
 """Animation des sprites (Pac-Man, fantômes) à partir d'une sprite-sheet."""
 
-from typing import Any
+from typing import Any, Optional
 import pygame
 from .sprites import SpriteSheet
 
@@ -15,27 +15,48 @@ class Animator:
 
     def __init__(self, data: dict[str, Any], sheet: SpriteSheet,
                  palette_index: int = 0, macro_row: int = 0,
-                 size: int = 32, speed: int = 100) -> None:
+                 size: int = 32, speed: int = 100,
+                 secret: Optional[dict[str, Any]] = None) -> None:
         self.loop_type = data.get("loop_type", "none")
         self.speed = speed              # ms entre deux frames
         self.index = 0
         self.finished = False
         self.last_update = pygame.time.get_ticks()
-        self.frames = self._build_frames(data, sheet, palette_index, macro_row, size)
+        self.frames = self._build_frames(
+            data, sheet, palette_index, macro_row, size, secret)
         self.image = self.frames[self.index]
 
     @staticmethod
     def _build_frames(data: dict[str, Any], sheet: SpriteSheet,
                       palette_index: int, macro_row: int,
-                      size: int) -> list[pygame.Surface]:
-        """Extrait, transforme (flip/rotation) et met à la taille `size` (px)."""
+                      size: int,
+                      secret: Optional[dict[str, Any]] = None
+                      ) -> list[pygame.Surface]:
+        """Extrait, transforme (flip/rotation) et met à la taille `size` (px).
+
+        En mode secret, chaque frame tente d'abord la texture dédiée
+        (`secret["files"][i]`) et applique *sa* transformation (la frame
+        source est orientée « droite », on la dérive par miroir/rotation).
+        Si le fichier manque, on retombe sur la planche par défaut avec la
+        transformation d'origine de l'animation.
+        """
+        secret_files = secret["files"] if secret else []
         frames = []
-        for col, row in data["frame"]:
-            img = sheet.get_large_sprite(macro_row, palette_index, col, row, 1)
-            if data["x_flip"] or data["y_flip"]:
-                img = pygame.transform.flip(img, data["x_flip"], data["y_flip"])
-            if data["rotation"] != 0:
-                img = pygame.transform.rotate(img, data["rotation"])
+        for i, (col, row) in enumerate(data["frame"]):
+            img = None
+            if i < len(secret_files):
+                img = sheet.load_secret_frame(secret_files[i])
+            if img is not None:
+                x_flip, y_flip, rotation = (
+                    secret["x_flip"], secret["y_flip"], secret["rotation"])
+            else:
+                img = sheet.get_large_sprite(macro_row, palette_index, col, row, 1)
+                x_flip, y_flip, rotation = (
+                    data["x_flip"], data["y_flip"], data["rotation"])
+            if x_flip or y_flip:
+                img = pygame.transform.flip(img, x_flip, y_flip)
+            if rotation != 0:
+                img = pygame.transform.rotate(img, rotation)
             # scale() = plus proche voisin -> pixels nets (pas de flou).
             frames.append(pygame.transform.scale(img, (size, size)))
 
