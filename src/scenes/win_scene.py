@@ -27,6 +27,9 @@ class WinScene(Scene):
         self.score = score
         self.name = ""
         self.saved = False
+        # Zones cliquables des deux invites du bas (remplies à chaque draw).
+        self._save_rect = pygame.Rect(0, 0, 0, 0)
+        self._skip_rect = pygame.Rect(0, 0, 0, 0)
         self.path = app.config.get("highscore_filename", "scoreboard.json")
         h = app.screen.get_height()
         self.title_font = BitmapFont(app.sheet, "yellow",
@@ -45,6 +48,13 @@ class WinScene(Scene):
 
     def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
         for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self._save_rect.collidepoint(event.pos):
+                    self._submit()
+                elif self._skip_rect.collidepoint(event.pos):
+                    from .menu_scene import MenuScene
+                    self.app.change_scene(MenuScene(self.app))
+                continue
             if event.type != pygame.KEYDOWN:
                 continue
             if event.key == pygame.K_RETURN:
@@ -93,7 +103,9 @@ class WinScene(Scene):
                               rect.centery)
             pygame.draw.rect(screen, CURSOR_COLOR, cursor)
 
-        self.font.draw(screen, "PRESS ENTER TO SAVE",
-                       center=(w // 2, h - h // 6))
-        self.font.draw(screen, "ESC TO SKIP",
-                       center=(w // 2, h - h // 10))
+        self._save_rect = self.font.draw(
+            screen, "PRESS ENTER TO SAVE",
+            center=(w // 2, h - h // 6)).inflate(40, 16)
+        self._skip_rect = self.font.draw(
+            screen, "ESC TO SKIP",
+            center=(w // 2, h - h // 10)).inflate(40, 16)

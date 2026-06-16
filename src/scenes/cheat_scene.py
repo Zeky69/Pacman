@@ -7,7 +7,7 @@ Fermeture : Échap ou sélection de RESUME.
 import pygame
 
 from typing import Any
-from .scene import Scene, AppProtocol
+from .scene import Scene, AppProtocol, menu_mouse
 from ..views.bitmap_font import BitmapFont
 
 OVERLAY_COLOR = (0, 0, 0, 210)
@@ -32,6 +32,8 @@ class CheatScene(Scene):
         super().__init__(app)
         self.game_scene = game_scene
         self.selected = 0
+        # Zones cliquables des items (remplies à chaque draw).
+        self._item_rects: list[pygame.Rect] = []
 
         self.snapshot = app.screen.copy()
         self.overlay = pygame.Surface(app.screen.get_size(), pygame.SRCALPHA)
@@ -52,6 +54,10 @@ class CheatScene(Scene):
         self.app.change_scene(self.game_scene)
 
     def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
+        self.selected, clicked = menu_mouse(events, self._item_rects, self.selected)
+        if clicked:
+            self._activate()
+            return
         for event in events:
             if event.type != pygame.KEYDOWN:
                 continue
@@ -101,6 +107,7 @@ class CheatScene(Scene):
                              center=(w // 2, top + title_h // 2))
 
         start_y = top + title_h + group_gap + item_h // 2
+        self._item_rects = []
         for i, (label, kind, attr) in enumerate(_ITEMS):
             y = start_y + i * gap
             font = self.font_sel if i == self.selected else self.font
@@ -118,5 +125,7 @@ class CheatScene(Scene):
                 sx = lx + lw + space
                 font.draw(screen, label, midleft=(lx, y))
                 state_font.draw(screen, state_str, midleft=(sx, y))
+                row = pygame.Rect(lx, y - item_h // 2, total, item_h)
             else:
-                font.draw(screen, label, center=(w // 2, y))
+                row = font.draw(screen, label, center=(w // 2, y))
+            self._item_rects.append(row.inflate(40, 16))

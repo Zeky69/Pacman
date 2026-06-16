@@ -2,7 +2,7 @@
 
 import pygame
 
-from .scene import Scene, AppProtocol
+from .scene import Scene, AppProtocol, menu_mouse
 from ..views.bitmap_font import BitmapFont
 
 BACKGROUND = (0, 0, 0)
@@ -16,6 +16,8 @@ class MenuScene(Scene):
     def __init__(self, app: AppProtocol) -> None:
         super().__init__(app)
         self.selected = 0
+        # Zones cliquables des options (remplies à chaque draw).
+        self._item_rects: list[pygame.Rect] = []
         h = app.screen.get_height()
         big = max(2, h // 84)
         small = max(1, h // 176)
@@ -24,6 +26,10 @@ class MenuScene(Scene):
         self.font_sel = BitmapFont(app.sheet, "yellow", scale=small)
 
     def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
+        self.selected, clicked = menu_mouse(events, self._item_rects, self.selected)
+        if clicked:
+            self._activate()
+            return
         for event in events:
             if event.type != pygame.KEYDOWN:
                 continue
@@ -67,6 +73,8 @@ class MenuScene(Scene):
                              center=(w // 2, top + title_h // 2))
 
         start_y = top + title_h + group_gap + item_h // 2
+        self._item_rects = []
         for i, option in enumerate(self.OPTIONS):
             font = self.font_sel if i == self.selected else self.font
-            font.draw(screen, option, center=(w // 2, start_y + i * gap))
+            rect = font.draw(screen, option, center=(w // 2, start_y + i * gap))
+            self._item_rects.append(rect.inflate(40, 16))

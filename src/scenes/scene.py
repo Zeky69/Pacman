@@ -22,6 +22,34 @@ class AppProtocol(Protocol):
     def quit(self) -> None: ...
 
 
+def menu_mouse(
+    events: list[pygame.event.Event],
+    rects: list[pygame.Rect],
+    selected: int,
+) -> tuple[int, bool]:
+    """Gère la souris pour un menu à options.
+
+    `rects` sont les zones cliquables des options (dans l'ordre), telles que
+    rendues à la frame précédente. Le survol (déplacement souris) met à jour
+    l'option sélectionnée ; un clic gauche sur une option la sélectionne et
+    déclenche son activation.
+
+    Renvoie ``(index_sélectionné, cliqué)`` : `cliqué` est vrai si une option
+    vient d'être cliquée (l'appelant doit alors l'activer).
+    """
+    for event in events:
+        if event.type == pygame.MOUSEMOTION:
+            for i, rect in enumerate(rects):
+                if rect.collidepoint(event.pos):
+                    selected = i
+                    break
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            for i, rect in enumerate(rects):
+                if rect.collidepoint(event.pos):
+                    return i, True
+    return selected, False
+
+
 class Scene:
     """Écran autonome : gère ses entrées, sa logique et son rendu."""
 
