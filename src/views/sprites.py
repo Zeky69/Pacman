@@ -1,5 +1,4 @@
 import math
-import os
 from typing import Any, Optional
 import pygame
 
@@ -289,7 +288,7 @@ def _draw_small_fallback(macro_row: int, palette_index: int,
 
 class SpriteSheet:
 
-    def __init__(self, filename: str, secret_dir: Optional[str] = None) -> None:
+    def __init__(self, filename: str) -> None:
         self._fallback = False
         self.sheet: Optional[pygame.Surface] = None
         try:
@@ -298,28 +297,6 @@ class SpriteSheet:
             print(f"Avertissement : asset introuvable « {filename} » — rendu de secours activé.")
             self._fallback = True
         self._cache: dict[Any, pygame.Surface] = {}
-        # Mode « secret » : dossier de textures PNG individuelles (ou None).
-        self._secret_dir = secret_dir
-        self._secret_cache: dict[str, Optional[pygame.Surface]] = {}
-
-    def load_secret_frame(self, name: str) -> Optional[pygame.Surface]:
-        """Charge une texture secrète par nom de fichier, ou None si absente.
-
-        Renvoie None quand le mode secret est désactivé ou que le fichier
-        n'existe pas, ce qui permet à l'appelant de retomber sur la planche
-        par défaut. Le résultat (succès comme échec) est mis en cache.
-        """
-        if not self._secret_dir:
-            return None
-        if name not in self._secret_cache:
-            path = os.path.join(self._secret_dir, name)
-            try:
-                self._secret_cache[name] = pygame.image.load(path).convert_alpha()
-            except (pygame.error, FileNotFoundError, OSError):
-                print(f"Avertissement : texture secrète introuvable « {path} » "
-                      f"— fallback sur la planche par défaut.")
-                self._secret_cache[name] = None
-        return self._secret_cache[name]
 
     def _extract(self, x: float, y: float, width: int, height: int,
                  scale: float) -> pygame.Surface:

@@ -1,0 +1,63 @@
+{
+  "sheet": "assets/default.png",
+  "animations": {
+    "pacman": {
+      "palette": [2, 1],
+      "size": "large",
+      "variants": {
+        "right": { "frames": [[6, 3], [6, 4], [6, 5]], "loop": "pingpong" },
+        "left":  { "from": "right", "x_flip": true },
+        "up":    { "frames": [[7, 3], [7, 4], [6, 5]], "loop": "pingpong", "y_flip": true },
+        "down":  { "from": "up", "y_flip": false },
+
+        "death_up": {
+          "frames": [
+            [0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3],
+            [0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4]
+          ],
+          "loop": "once",
+          "y_flip": true
+        },
+        "death_down":  { "from": "death_up", "y_flip": false },
+        "death_right": { "from": "death_down", "rotation": -90 },
+        "death_left":  { "from": "death_down", "rotation": 90 }
+      }
+    },
+    "ghost": {
+      "size": "large",
+      "variants": {
+        "right":      { "frames": [[0, 0], [1, 0]], "loop": "pingpong" },
+        "left":       { "frames": [[4, 0], [5, 0]], "loop": "pingpong" },
+        "up":         { "frames": [[6, 0], [7, 0]], "loop": "pingpong" },
+        "down":       { "frames": [[2, 0], [3, 0]], "loop": "pingpong" },
+        "frightened": { "frames": [[0, 5], [1, 5]], "loop": "pingpong" }
+      }
+    }
+  },
+  "skins": {
+    "default": {},
+    "secret": {
+      "dir": "assets/sprites",
+      "overrides": {
+        "pacman/right": {
+          "files": ["pacman-right-1.png", "pacman-right-2.png", "pacman-right-3.png"]
+        },
+        "pacman/left": { "from": "pacman/right", "x_flip": true },
+        "pacman/up":   { "from": "pacman/right", "rotation": 90 },
+        "pacman/down": { "from": "pacman/right", "rotation": -90 },
+
+        "pacman/death_up": {
+          "files": [
+            "pacman-death-1.png", "pacman-death-2.png", "pacman-death-3.png",
+            "pacman-death-4.png", "pacman-death-5.png", "pacman-death-6.png",
+            "pacman-death-7.png", "pacman-death-8.png"
+          ],
+          "loop": "once"
+        },
+        "pacman/death_down":  { "from": "pacman/death_up" },
+        "pacman/death_right": { "from": "pacman/death_up" },
+        "pacman/death_left":  { "from": "pacman/death_up" }
+      }
+    }
+  }
+}

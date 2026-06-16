@@ -7,16 +7,12 @@ from ..models.pacman import Pacman
 from ..models.ghost import Inky, Blinky, Clyde
 from ..models.game import HALF, Game
 from ..models.maze import Maze
-from .sprites import SpriteSheet
 from .maze_view import MazeView
+from .assets import Assets
 from .sprite_view import Animator
 from .bitmap_font import BitmapFont
-from .settings import (
-    PACMAN_ANIMATIONS, GHOST_ANIMATIONS, COLORS, GOMMES_TILES, SCORE_SPRITE,
-    FOOD, PACMAN_SECRET_FRAMES, SECRET_SPRITES_DIR,
-)
+from .settings import COLORS, GOMMES_TILES, SCORE_SPRITE, FOOD
 
-ASSET_PATH = "assets/default.png"
 BACKGROUND = (0, 0, 0)
 
 DEBUG_SHOW_PATHS = False
@@ -24,9 +20,6 @@ DEBUG_SHOW_TARGETS = False
 
 # Côté d'une cellule de base (avant mise à l'échelle), en pixels.
 BASE_CELL = 8
-
-# Palette de Pac-Man dans la planche (palette_index, macro_row).
-PACMAN_PALETTE = (2, 1)
 
 # Couleurs RGB des chemins de chaque fantôme.
 _PATH_COLORS = {
@@ -43,9 +36,11 @@ class GameView:
     def __init__(self, screen: pygame.Surface, maze: Maze,
                  secret: bool = False) -> None:
         self.screen = screen
-        self.secret = secret
-        self.sheet = SpriteSheet(
-            ASSET_PATH, secret_dir=SECRET_SPRITES_DIR if secret else None)
+        # Assets : manifeste + skin actif (default / secret). `sheet` reste
+        # exposée pour les usages « planche brute » (gommes, fruits, score,
+        # police HUD, labyrinthe).
+        self.assets = Assets(secret=secret)
+        self.sheet = self.assets.sheet
         screen_w, screen_h = screen.get_size()
 
         # Bandes réservées au HUD (haut = score/level/time, bas = vies).
@@ -118,16 +113,10 @@ class GameView:
         self.hud_font_red = BitmapFont(self.sheet, "red", scale=hud_s)
         # Police réduite pour les popups de score en mode ASCII (valeur non-standard).
         self.popup_font = BitmapFont(self.sheet, "yellow", scale=max(1, hud_s - 2))
-        pac_palette, pac_macro = PACMAN_PALETTE
-        life_raw = None
-        if self.secret:
-            life_raw = self.sheet.load_secret_frame(
-                PACMAN_SECRET_FRAMES["right"]["files"][0])
-        if life_raw is None:
-            life_raw = self.sheet.get_large_sprite(pac_macro, pac_palette, 6, 3, 1)
+        # Icône de vie : 1re frame de Pac-Man via le skin actif (PNG en mode
+        # secret, planche sinon), produite directement à la bonne taille.
         life_size = max(12, int(self.hud_bottom * 0.7))
-        self._life_icon = pygame.transform.scale(
-            life_raw, (life_size, life_size))
+        self._life_icon = self.assets.life_icon_source(life_size)
 
     def _rebuild_maze_surface(self, maze: Maze) -> None:
         """(Re)génère le fond pré-rendu du labyrinthe pour `maze`.
@@ -151,40 +140,24 @@ class GameView:
         """Renvoie (en le créant au besoin) l'animateur courant de l'entité."""
         if isinstance(entity, Pacman):
             if entity.dead:
-                # dead_until est unique à chaque mort → animateur remis à zéro automatiquement
+                # dead_until est unique à chaque mort → animateur recréé à chaque mort.
                 key: Any = (id(entity), "dead", entity.direction, entity.dead_until)
                 if key not in self._animators:
-                    death_key = f"death_{entity.direction}"
-                    data = PACMAN_ANIMATIONS[death_key]
-                    palette_index, macro_row = PACMAN_PALETTE
-                    secret = (PACMAN_SECRET_FRAMES.get(death_key)
-                              if self.secret else None)
-                    self._animators[key] = Animator(
-                        data, self.sheet, palette_index, macro_row,
-                        size=self.tile_px, secret=secret
-                    )
+                    self._animators[key] = self.assets.animator(
+                        "pacman", f"death_{entity.direction}", self.tile_px)
                 return self._animators[key]
             key = (id(entity), entity.direction)
             if key not in self._animators:
-                data = PACMAN_ANIMATIONS[entity.direction]
-                palette_index, macro_row = PACMAN_PALETTE
-                secret = (PACMAN_SECRET_FRAMES.get(entity.direction)
-                          if self.secret else None)
-                self._animators[key] = Animator(
-                    data, self.sheet, palette_index, macro_row,
-                    size=self.tile_px, secret=secret
-                )
+                self._animators[key] = self.assets.animator(
+                    "pacman", entity.direction, self.tile_px)
             return self._animators[key]
 
-        # Ghost mangé : retour au spawn en noir
+        # Ghost mangé : retour au spawn, palette noire.
         if entity.eaten:
             key = (id(entity), "eaten", entity.direction)
             if key not in self._animators:
-                data = GHOST_ANIMATIONS[entity.direction]
-                palette_index, macro_row = COLORS["black"]
-                self._animators[key] = Animator(
-                    data, self.sheet, palette_index, macro_row, size=self.tile_px
-                )
+                self._animators[key] = self.assets.animator(
+                    "ghost", entity.direction, self.tile_px, palette=COLORS["black"])
             return self._animators[key]
 
         # Ghost effrayé → animation frightened + couleur propre (ou red-2 si clignotement)
@@ -195,20 +168,14 @@ class GameView:
                 color = entity.color
             key = (id(entity), "frightened", color)
             if key not in self._animators:
-                data = GHOST_ANIMATIONS["frightened"]
-                palette_index, macro_row = COLORS[color]
-                self._animators[key] = Animator(
-                    data, self.sheet, palette_index, macro_row, size=self.tile_px
-                )
+                self._animators[key] = self.assets.animator(
+                    "ghost", "frightened", self.tile_px, palette=COLORS[color])
             return self._animators[key]
 
         key = (id(entity), entity.direction)
         if key not in self._animators:
-            data = GHOST_ANIMATIONS[entity.direction]
-            palette_index, macro_row = COLORS[entity.color]
-            self._animators[key] = Animator(
-                data, self.sheet, palette_index, macro_row, size=self.tile_px
-            )
+            self._animators[key] = self.assets.animator(
+                "ghost", entity.direction, self.tile_px, palette=COLORS[entity.color])
         return self._animators[key]
 
     def _tile_screen_pos(self, col: int, row: int) -> tuple[int, int]:
