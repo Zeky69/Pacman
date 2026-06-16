@@ -49,6 +49,15 @@ _NON_NEGATIVE_INT_KEYS = (
 _POSITIVE_FLOAT_KEYS = ("pacman_speed", "ghost_speed")
 # Toutes les autres clés numériques exigent un entier strictement positif.
 
+# Bornes (min, max) pour les clés à intervalle restreint. Une valeur entière
+# valide mais hors bornes est ramenée dans l'intervalle (« clamp ») plutôt que
+# de planter : un labyrinthe trop grand ferait exploser la mémoire (la surface
+# pygame du labyrinthe est dimensionnée sur width/height).
+_RANGES = {
+    "width": (5, 35),
+    "height": (5, 35),
+}
+
 
 def _strip_comments(text: str) -> str:
     """Retire les lignes de commentaire (# ou //) avant le parsing JSON.
@@ -101,8 +110,26 @@ def _normalize(data: dict[str, Any]) -> dict[str, Any]:
                   f"({data[key]!r}) — using default {default!r}.",
                   file=sys.stderr)
         else:
-            config[key] = valid
+            config[key] = _clamp(key, valid)
     return config
+
+
+def _clamp(key: str, value: Any) -> Any:
+    """Ramène `value` dans l'intervalle autorisé de `key` (si défini).
+
+    Les valeurs hors bornes (ex. un labyrinthe gigantesque) sont ramenées au
+    min/max au lieu de planter le jeu. Un avertissement est affiché.
+    """
+    bounds = _RANGES.get(key)
+    if bounds is None:
+        return value
+    low, high = bounds
+    clamped = max(low, min(value, high))
+    if clamped != value:
+        print(f"Config: '{key}' value {value!r} out of range "
+              f"[{low}, {high}] — clamped to {clamped!r}.",
+              file=sys.stderr)
+    return clamped
 
 
 def load_config(path: str = DEFAULT_CONFIG_PATH) -> dict[str, Any]:

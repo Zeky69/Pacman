@@ -23,8 +23,11 @@ class HighscoreScene(Scene):
 
     def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
         for event in events:
-            if event.type == pygame.KEYDOWN and event.key in (
-                    pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_SPACE):
+            key_back = event.type == pygame.KEYDOWN and event.key in (
+                pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_SPACE)
+            click_back = (event.type == pygame.MOUSEBUTTONDOWN
+                          and event.button == 1)
+            if key_back or click_back:
                 from .menu_scene import MenuScene
                 self.app.change_scene(MenuScene(self.app))
 

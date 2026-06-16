@@ -7,6 +7,7 @@ permet collisions et auto-tiling.
 """
 
 from __future__ import annotations
+import sys
 from collections import deque
 from typing import TYPE_CHECKING, Optional
 
@@ -27,7 +28,20 @@ class Maze:
 
     def __init__(self, cols: int = 20, rows: int = 20,
                  seed: int = 0, perfect: bool = False) -> None:
-        generator = MazeGenerator(size=(cols, rows), seed=seed, perfect=perfect)
+        # MazeGenerator creuse le labyrinthe par un DFS *récursif* : la
+        # profondeur peut atteindre le nombre de cellules (cols*rows). On
+        # relève temporairement la limite de récursion pour couvrir la grille
+        # (avec marge), puis on la restaure — sinon un grand labyrinthe lève
+        # RecursionError. La taille est déjà bornée en amont (config), donc la
+        # limite reste modeste (aucun risque de débordement de pile C).
+        needed = cols * rows + 100
+        old_limit = sys.getrecursionlimit()
+        if needed > old_limit:
+            sys.setrecursionlimit(needed)
+        try:
+            generator = MazeGenerator(size=(cols, rows), seed=seed, perfect=perfect)
+        finally:
+            sys.setrecursionlimit(old_limit)
         self.entry = generator.maze_entry          # (col, row) d'entrée
         self.exit = generator.maze_exit            # (col, row) de sortie
         self.shortest_path = generator.shortest_path
