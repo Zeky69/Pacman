@@ -31,6 +31,7 @@ DEFAULTS = {
     "points_per_ghost": 200,
     "seed": 42,
     "level_max_time": 90,
+    "level_count": 5,
     "pacman_speed": 1.0,
     "ghost_speed": 1.0,
     "invincible": False,
