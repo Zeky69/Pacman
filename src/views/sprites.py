@@ -6,39 +6,16 @@ from .settings import (
     SMALL_BLOCK, LARGE_BLOCK,
     MACRO_ROW_HEIGHT, LARGE_BLOCK_Y_OFFSET,
     COLORS, MAZE_TILE, GOMMES_TILES,
+    PALETTE_RGB, WALL_BLUE,
 )
 
 _PALETTE_TO_NAME = {v: k for k, v in COLORS.items()}
-
-_NAMED_RGB = {
-    "red": (220, 50, 50),
-    "pink": (255, 184, 255),
-    "cyan": (0, 220, 220),
-    "orange": (255, 184, 81),
-    "beige-2": (222, 184, 135),
-    "red-2": (255, 100, 100),
-    "black": (20, 20, 20),
-    "yellow": (255, 220, 0),
-    "blue": (50, 50, 220),
-    "white": (255, 255, 255),
-    "red-3": (200, 80, 80),
-    "beige": (210, 180, 140),
-    "white-2": (230, 230, 230),
-    "white-3": (210, 210, 210),
-    "orange-2": (255, 165, 0),
-    "white-4": (200, 200, 200),
-    "yellow-2": (255, 200, 0),
-    "white-5": (190, 190, 190),
-    "beige-3": (195, 170, 120),
-    "fatih": (150, 100, 200),
-}
-
-_WALL_BLUE = (33, 33, 200)
+_WALL_BLUE = WALL_BLUE
 
 
 def _palette_rgb(palette_index: int, macro_row: int) -> tuple[int, int, int]:
     name = _PALETTE_TO_NAME.get((palette_index, macro_row))
-    return _NAMED_RGB.get(name, (128, 128, 128)) if name else (128, 128, 128)
+    return PALETTE_RGB.get(name, (128, 128, 128)) if name else (128, 128, 128)
 
 
 _MAZE_COORDS_TO_NAME = {(v[0], v[1]): k for k, v in MAZE_TILE.items()}

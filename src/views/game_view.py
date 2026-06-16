@@ -11,7 +11,7 @@ from .maze_view import MazeView
 from .assets import Assets
 from .sprite_view import Animator
 from .bitmap_font import BitmapFont
-from .settings import COLORS, GOMMES_TILES, SCORE_SPRITE, FOOD
+from .settings import COLORS, SCORE_SPRITE, FOOD, GHOST_COLORS
 
 BACKGROUND = (0, 0, 0)
 
@@ -21,13 +21,8 @@ DEBUG_SHOW_TARGETS = False
 # Côté d'une cellule de base (avant mise à l'échelle), en pixels.
 BASE_CELL = 8
 
-# Couleurs RGB des chemins de chaque fantôme.
-_PATH_COLORS = {
-    "red":    (255, 0,   0),
-    "pink":   (255, 184, 255),
-    "cyan":   (0,   255, 255),
-    "orange": (255, 184, 81),
-}
+# Couleurs RGB des chemins de chaque fantôme (depuis le manifeste).
+_PATH_COLORS = GHOST_COLORS
 
 
 class GameView:
@@ -78,15 +73,11 @@ class GameView:
         # Facteur pixel-modèle → pixel-écran (1 pixel-modèle = cell_pitch / HALF px écran).
         self.model_scale = self.cell_pitch / HALF
 
-        # Sprites des gommes pré-scalés.
-        sc, sr = GOMMES_TILES["small"]
-        bc, br = GOMMES_TILES["big"]
-        raw_small = self.sheet.get_small_sprite(0, 0, sc, sr, 1)
-        raw_big = self.sheet.get_small_sprite(0, 0, bc, br, 1)
+        # Sprites des gommes via le skin actif (PNG en mode secret, planche sinon).
         s_size = max(2, round(self.cell_pitch * 0.5))
         b_size = max(4, round(self.cell_pitch * 0.6))
-        self._gom_img = pygame.transform.scale(raw_small, (s_size, s_size))
-        self._sgom_img = pygame.transform.scale(raw_big, (b_size, b_size))
+        self._gom_img = self.assets.sprite("gum", "small", s_size)
+        self._sgom_img = self.assets.sprite("gum", "big", b_size)
 
         self._animators: dict[Any, Animator] = {}  # cache : (id(entity), direction) -> Animator
 
@@ -152,30 +143,28 @@ class GameView:
                     "pacman", entity.direction, self.tile_px)
             return self._animators[key]
 
-        # Ghost mangé : retour au spawn, palette noire.
+        # État du fantôme (mangé / effrayé / normal) : variante + couleur
+        # décrites par données dans le manifeste (section `ghost.states`).
+        states = self.assets.states("ghost")
         if entity.eaten:
-            key = (id(entity), "eaten", entity.direction)
-            if key not in self._animators:
-                self._animators[key] = self.assets.animator(
-                    "ghost", entity.direction, self.tile_px, palette=COLORS["black"])
-            return self._animators[key]
+            state_name = "eaten"
+        elif entity.frightened:
+            state_name = "frightened"
+        else:
+            state_name = "normal"
+        state = states[state_name]
 
-        # Ghost effrayé → animation frightened + couleur propre (ou red-2 si clignotement)
-        if entity.frightened:
-            if entity.is_blinking(now) and (now // 250) % 2 == 0:
-                color = "red-2"
-            else:
-                color = entity.color
-            key = (id(entity), "frightened", color)
-            if key not in self._animators:
-                self._animators[key] = self.assets.animator(
-                    "ghost", "frightened", self.tile_px, palette=COLORS[color])
-            return self._animators[key]
+        variant = entity.direction if state.get("use_direction") else state["variant"]
+        color = entity.color if state.get("color_from_entity") else state["color"]
+        # Clignotement (fin d'effarouchement) : alterne vers `blink_color`.
+        blink = state.get("blink_color")
+        if blink and entity.is_blinking(now) and (now // state["blink_ms"]) % 2 == 0:
+            color = blink
 
-        key = (id(entity), entity.direction)
+        key = (id(entity), state_name, variant, color)
         if key not in self._animators:
             self._animators[key] = self.assets.animator(
-                "ghost", entity.direction, self.tile_px, palette=COLORS[entity.color])
+                "ghost", variant, self.tile_px, palette=COLORS[color])
         return self._animators[key]
 
     def _tile_screen_pos(self, col: int, row: int) -> tuple[int, int]:

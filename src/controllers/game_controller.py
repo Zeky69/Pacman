@@ -29,7 +29,7 @@ class GameController:
 
         # Planche de sprites partagée (police bitmap des scènes, icônes...).
         from ..views.sprites import SpriteSheet
-        from ..views.assets import SHEET_PATH
+        from ..views.settings import SHEET_PATH
         self.sheet = SpriteSheet(SHEET_PATH)
 
         # Scène de départ : le menu principal.

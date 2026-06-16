@@ -9,13 +9,13 @@ Pipeline :
     Assets (lit le manifeste) -> Skin actif -> frames -> Animator
 """
 
-import json
 import os
 from typing import Any, Optional, Protocol
 import pygame
 
 from .sprites import SpriteSheet
 from .sprite_view import Animator
+from . import settings
 
 _Frames = tuple[list[pygame.Surface], str]
 
@@ -26,10 +26,6 @@ class Skin(Protocol):
     def frames_for(self, anim: str, variant: str, size: int,
                    palette: tuple[int, int]) -> _Frames: ...
 
-
-# Chemin de la planche par défaut (doit correspondre à "sheet" du manifeste).
-SHEET_PATH = "assets/default.png"
-MANIFEST_PATH = "assets/manifest.json"
 
 # Type d'une définition résolue : frames/fichiers, loop, flips, rotation.
 _Resolved = tuple[list[Any], Optional[str], bool, bool, int]
@@ -148,10 +144,10 @@ class Assets:
     """Point d'entrée : charge le manifeste, choisit le skin, produit les animateurs."""
 
     def __init__(self, secret: bool = False,
-                 manifest_path: str = MANIFEST_PATH) -> None:
-        with open(manifest_path, encoding="utf-8") as f:
-            manifest = json.load(f)
-        self.sheet = SpriteSheet(manifest.get("sheet", SHEET_PATH))
+                 manifest: Optional[dict[str, Any]] = None) -> None:
+        if manifest is None:
+            manifest = settings.MANIFEST
+        self.sheet = SpriteSheet(manifest["sheet"]["path"])
         self.animations: dict[str, Any] = manifest["animations"]
         base = SheetSkin(self.sheet, self.animations)
         skin_def = manifest.get("skins", {}).get("secret" if secret else "default", {})
@@ -169,6 +165,16 @@ class Assets:
         palette = self.animations[anim].get("palette", (0, 0))
         return (palette[0], palette[1])
 
+    def states(self, anim: str) -> dict[str, Any]:
+        """Descriptions d'états (variante + couleur) d'une entité, depuis le manifeste.
+
+        Ex. pour `ghost` : `normal` / `eaten` / `frightened`, chacun précisant
+        la variante à jouer et la palette à appliquer (couleur de l'entité,
+        couleur fixe, et éventuelle couleur de clignotement).
+        """
+        states: dict[str, Any] = self.animations[anim].get("states", {})
+        return states
+
     def animator(self, anim: str, variant: str, size: int,
                  palette: Optional[tuple[int, int]] = None,
                  speed: int = 100) -> Animator:
@@ -176,8 +182,13 @@ class Assets:
             anim, variant, size, self._palette(anim, palette))
         return Animator(frames, loop, speed)
 
+    def sprite(self, anim: str, variant: str, size: int,
+               palette: Optional[tuple[int, int]] = None) -> pygame.Surface:
+        """Sprite statique (1re frame) via le skin actif — gommes, icône de vie…"""
+        frames, _ = self.skin.frames_for(
+            anim, variant, size, self._palette(anim, palette))
+        return frames[0]
+
     def life_icon_source(self, size: int) -> pygame.Surface:
         """Première frame de Pac-Man (skin actif), pour l'icône de vie du HUD."""
-        frames, _ = self.skin.frames_for(
-            "pacman", "right", size, self._palette("pacman", None))
-        return frames[0]
+        return self.sprite("pacman", "right", size)
