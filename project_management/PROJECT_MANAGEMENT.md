@@ -93,6 +93,19 @@
 
 ---
 
+### Phase 6 — Packaging, Deployment & Hardening (2026-06-17)
+
+| Date | Author | Activity |
+|------|--------|----------|
+| 2026-06-17 | zakburak | **PyInstaller packaging:** `pacman.spec` (standalone build, embedded assets + config); dynamic config-path resolution and resource handling via `src/paths.py` (`sys._MEIPASS`) |
+| 2026-06-17 | zakburak | **Deployment:** game published on Itch.io; `make build` / `make package` targets (zip ready to upload); README link added |
+| 2026-06-17 | zakburak | **Manifest hardening:** geometry validation (`_validate_block`), RGB safeguards (`_checked_rgb`, components bounded to 0–255), integer-cast safety in drawing functions |
+| 2026-06-17 | zakburak | Config hardening: `lives` clamped to `[1, 99]`; ghost speed capped at `GHOST_SPEED_MAX = 10.0` regardless of config |
+
+**Goal:** make the project shippable (standalone build + online release) and crash-proof against hostile config and manifest files during peer review.
+
+---
+
 ## 3. Planned vs Actual Progress
 
 | Milestone | Planned | Actual | Delta |
@@ -109,7 +122,9 @@
 | Asset manifest + skin system | — | Jun 16 | Added post-release |
 | Secret mode ("Fermis") | — | Jun 16 | Added post-release |
 | Ghost fright scaling per level | — | Jun 17 | Added post-release |
-| Deployment (Itch.io / Steam) | Week 3 | **Not done** | — |
+| Deployment (Itch.io) | Week 3 | Jun 17 | **Done** (PyInstaller + Itch.io) |
+| Manifest geometry/RGB hardening | — | Jun 17 | Added post-release |
+| Config ranges (`lives`, ghost-speed cap) | — | Jun 17 | Added post-release |
 | Project management documents | Week 3 | Jun 10 | Late |
 
 ---
@@ -135,7 +150,8 @@
 | Ghost BFS too slow on large mazes | Medium | Medium | Empirically tested up to 30×30; BFS on the passage graph (not pixel grid) is O(n) cells |
 | Timer drift after long pauses | Medium | Low | `_tick_timer` clamps dt to 100 ms per frame |
 | Config file modified to invalid values during defence | High | Low | All keys clamped to safe defaults; no traceback possible |
-| Deployment not ready for peer review | **High** | **High** | **Mitigation: demonstrate locally; prepare Itch.io build** |
+| Manifest file corrupted/edited during defence | Medium | Medium | Full structural + geometry/RGB validation; baked-in fallback manifest; tested against 26 corruption cases — always falls back, never crashes |
+| Deployment not ready for peer review | ~~High~~ | ~~High~~ | **Resolved** — standalone PyInstaller build (`make package`) + published on Itch.io |
 
 ---
 
@@ -210,6 +226,20 @@
 | Speed variable name typo (Pac-Man) | `7f47f7f` — variable rename |
 | `godmode` config key inconsistency | `0c02655` — renamed to `invincible` |
 
+### 6.5 Packaging & robustness (Phase 6)
+
+| Feature | Test | Status |
+|---------|------|--------|
+| Standalone build | `make build` → run `dist/pacman/pacman` with no system Python | ✅ |
+| Package for release | `make package` → `dist/pacman-linux.zip` + editable config next to exe | ✅ |
+| Frozen build finds assets | Launch packaged exe (resources via `sys._MEIPASS`) | ✅ |
+| Highscores writable in frozen build | Finish a game from the packaged exe, score persists | ✅ |
+| Online availability | Download from Itch.io and play | ✅ |
+| Corrupted manifest → fallback | 26 corruption cases (bad JSON, missing keys, out-of-range RGB, bad geometry, broken skin) | ✅ — always falls back, no traceback |
+| Missing manifest → fallback | Remove `assets/manifest.json`, launch | ✅ |
+| `lives` out of range | Set `"lives": 9999` → clamped to 99 | ✅ |
+| Excessive `ghost_speed` | Set huge speed → capped at 10.0 | ✅ |
+
 ---
 
 ## 7. Blocking Points & Conflicts
@@ -221,4 +251,6 @@
 | Inter-frame pacgum collection | At high speed, Pac-Man could skip over a pacgum cell between frames | `cells_visited` stores previous + current position; all intermediate cells checked |
 | Bitmap font missing glyphs | Fallback maze tile rendering exposed missing font asset path | `b769e38` — fallback debugger + error-resistant font loading |
 | Manifest missing at launch | If `assets/manifest.json` absent, asset loading failed silently | `1faca82` — full fallback manifest baked into `settings.py` |
+| Manifest with hostile values | Out-of-range RGB / bad block geometry could crash pygame at surface creation | `b7da3b1` — geometry validation + RGB safeguards (0–255), bad values → fallback |
 | Maze generation crash on large grids | Python recursion limit too low for big mazes | `0145b34` — explicit `sys.setrecursionlimit` increase |
+| Frozen build couldn't find assets / write scores | PyInstaller bundle is read-only and relocates resources | `ea53f36` — `src/paths.py` resolves `sys._MEIPASS` + per-platform user-data dir |

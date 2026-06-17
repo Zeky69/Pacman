@@ -39,7 +39,10 @@ The game takes **exactly one argument**: a JSON configuration file.
 |--------|-------------|
 | `make install` | Install dependencies via `uv sync` |
 | `make run` | Launch the game with `config.json` |
-| `make clean` | Remove `__pycache__`, `.mypy_cache` |
+| `make debug` | Launch the game under `pdb` |
+| `make clean` | Remove `__pycache__`, `.mypy_cache`, `build/`, `dist/` |
+| `make build` | Build a standalone executable into `dist/pacman/` (PyInstaller) |
+| `make package` | Build + bundle an editable `config.json` + zip into `dist/pacman-linux.zip` |
 | `make lint` | Run `flake8` + `mypy` (standard flags) |
 | `make lint-strict` | Run `flake8` + `mypy --strict` |
 
@@ -67,9 +70,9 @@ On missing or invalid keys the game logs a warning to stderr, falls back to the 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `highscore_filename` | string | `"scoreboard.json"` | Path to the highscore file |
-| `width` | int > 0 | `20` | Maze width (number of passage columns) |
-| `height` | int > 0 | `20` | Maze height (number of passage rows) |
-| `lives` | int > 0 | `3` | Starting lives |
+| `width` | int > 0 | `20` | Maze width — clamped to `[5, 35]` |
+| `height` | int > 0 | `20` | Maze height — clamped to `[5, 35]` |
+| `lives` | int > 0 | `3` | Starting lives — clamped to `[1, 99]` |
 | `pacgum` | int ≥ 0 | `42` | (reserved — placed automatically from maze) |
 | `points_per_pacgum` | int ≥ 0 | `10` | Points for eating a pacgum |
 | `points_per_super_pacgum` | int ≥ 0 | `50` | Points for eating a super-pacgum |
@@ -77,10 +80,12 @@ On missing or invalid keys the game logs a warning to stderr, falls back to the 
 | `seed` | int ≥ 0 | `42` | Seed used for level 1 (subsequent levels use random seeds) |
 | `level_max_time` | int > 0 | `90` | Time limit per level in seconds |
 | `pacman_speed` | float > 0 | `1.0` | Base Pac-Man speed multiplier |
-| `ghost_speed` | float > 0 | `1.0` | Base ghost speed multiplier |
+| `ghost_speed` | float > 0 | `1.0` | Base ghost speed multiplier (per-level speed is capped at `10.0`) |
 | `invincible` | bool | `false` | Start with invincibility enabled |
 | `level_count` | int > 0 | `5` | Number of levels to complete for a full win |
 | `secret` | bool | `false` | Enable secret "Fermis" skin with alternate Pac-Man textures |
+
+Out-of-range integers are **clamped** to the nearest bound (with a warning on stderr) instead of crashing; invalid types fall back to the default.
 
 ### Minimal example (`config.json`)
 
@@ -174,7 +179,7 @@ In **frightened** mode (after a super-pacgum is eaten) ghosts reverse direction 
 
 ### Level progression
 
-Ghosts gain +10 % speed per level (`GHOST_SPEEDUP_PER_LEVEL = 0.1`). The frightened duration after a super-pacgum is eaten decreases by 500 ms each level (`FRIGHTENED_REDUCTION_PER_LEVEL`), making later levels more dangerous. Score and lives carry over between levels. The number of levels is controlled by `level_count` (default 5). The level timer pauses naturally because `update()` is not called while the game is paused.
+Ghosts gain +10 % speed per level (`GHOST_SPEEDUP_PER_LEVEL = 0.1`), capped at `GHOST_SPEED_MAX = 10.0` so an aggressive config can never make them uncatchable or unstable. The frightened duration after a super-pacgum is eaten decreases by 500 ms each level (`FRIGHTENED_REDUCTION_PER_LEVEL`), making later levels more dangerous. Score and lives carry over between levels. The number of levels is controlled by `level_count` (default 5). The level timer pauses naturally because `update()` is not called while the game is paused.
 
 ### Fruit system
 
@@ -198,6 +203,21 @@ Typing `f e r m i s` sequentially on the main menu activates the secret "Fermis"
 
 ---
 
+## Packaging & Deployment
+
+The game is published on **Itch.io** and can be rebuilt as a standalone executable with PyInstaller — no Python installation is required to play the packaged build.
+
+```bash
+make build      # → dist/pacman/        (standalone, assets + config embedded)
+make package    # build + editable config.json alongside the exe + dist/pacman-linux.zip
+```
+
+`pacman.spec` embeds the `assets/` folder and `config.json` into the bundle. `src/paths.py` resolves resource paths transparently whether the game runs from source or from a frozen build (via `sys._MEIPASS`). Because the bundled `config.json` is read-only, `make package` also drops an **editable** `config.json` next to the executable, so players can tweak settings without recompiling. Highscores are written to a per-platform user-data directory, which stays writable even when the bundle itself is read-only.
+
+**Play online:** <https://thorfinn61.itch.io/pac-man>
+
+---
+
 ## General Software Architecture
 
 ```
@@ -205,6 +225,7 @@ pac-man.py              Entry point — calls src/main.py:main()
 src/
 ├── config.py           JSON loading, comment stripping, validation/clamping
 ├── highscores.py       Load/save highscore file (robust to all file errors)
+├── paths.py            Resource/user-data path resolution (source vs frozen build)
 ├── main.py             main() — parse args, load config, start GameController
 │
 ├── controllers/
@@ -235,7 +256,7 @@ src/
     ├── sprites.py      SpriteSheet loader and frame extractor
     ├── assets.py       Asset manager: reads manifest.json, builds skin + animators
     ├── bitmap_font.py  Bitmap font renderer (from sprite sheet)
-    └── settings.py     View constants (tile size, colours, manifest fallback)
+    └── settings.py     Manifest loading + validation + baked-in fallback; view constants
 ```
 
 **Key relationships:**
@@ -280,8 +301,8 @@ The project was developed by two contributors:
 
 | Contributor | Commits | Main areas |
 |-------------|---------|------------|
-| zakburak | ~54 | Engine, AI, gameplay, fruits, asset manifest, secret mode |
-| elsahin | ~17 | UI, scenes, mouse nav, config robustness |
+| zakburak | ~60 | Engine, AI, gameplay, fruits, asset manifest, secret mode, packaging |
+| elsahin | ~21 | UI, scenes, mouse nav, config robustness |
 
 ---
 
