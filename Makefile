@@ -10,7 +10,7 @@ debug:
 	uv run python -m pdb pac-man.py config.json
 
 clean:
-	rm -rf __pycache__ .mypy_cache */**/__pycache__ build dist
+	rm -rf __pycache__ .mypy_cache */**/__pycache__ build dist .venv
 
 # Compile l'exécutable autonome (Linux) dans dist/pacman/.
 # On vide build/ et dist/ d'abord : pyinstaller écrase ses fichiers mais ne
