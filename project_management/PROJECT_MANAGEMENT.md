@@ -1,7 +1,7 @@
 # Project Management — Pac-Man (42 Curriculum)
 
-**Team:** zakburak (Zeky69 / Zekeriya) · elsahin (thorfinn)  
-**Period:** 2026-05-25 → 2026-06-10  
+**Team:** zakburak (Zeky69 / Zekeriya) · elsahin (thorfinn / spectre)  
+**Period:** 2026-05-25 → 2026-06-17  
 **Repository:** https://github.com/Zeky69/Pacman
 
 ---
@@ -10,8 +10,8 @@
 
 | Member | GitHub handle | Role |
 |--------|--------------|------|
-| zakburak | Zeky69 / Zekeriya | Core engine, ghost AI, game mechanics, cheat mode, debug tools |
-| elsahin | thorfinn | Config validation, UI scenes, HUD, maze view refactor, font scaling |
+| zakburak | Zeky69 / Zekeriya | Core engine, ghost AI, game mechanics, fruit system, asset manifest, secret mode, cheat mode, debug tools |
+| elsahin | thorfinn / spectre | Config validation, UI scenes, HUD, mouse navigation, maze view refactor, font scaling |
 
 **Decision process:** async via GitHub commits + direct communication. No formal meetings recorded. Conflicts resolved by the author of the affected module.
 
@@ -64,11 +64,32 @@
 |------|--------|----------|
 | 2026-06-10 | zakburak | Cheat menu (invincible, ghost freeze, speed boost, level skip, +1 life); ghost path/target debug overlays; ready-state display; death timer |
 | 2026-06-10 | zakburak | Maze tile fallback debugger; bitmap font robustness |
+| 2026-06-10 | zakburak | **Fruit system:** spawning at 30 %/70 % pacgum thresholds, 9-second duration, level-indexed point table (cherry → galaxian) |
+| 2026-06-10 | zakburak | Config robustness: improved error messages, adjusted name-length limits |
 | 2026-06-10 | elsahin | Rename `godmode` → `invincible`; font scaling fixes across all scenes |
 | 2026-06-10 | elsahin | Win scene (score submission); game-over scene (score submission); maze surface regeneration on level change |
 | 2026-06-10 | zakburak | Comprehensive README |
 
 **Goal:** feature-complete, polished, and documented game ready for peer review.
+
+---
+
+### Phase 5 — Extended Features (2026-06-16 → 2026-06-17)
+
+| Date | Author | Activity |
+|------|--------|----------|
+| 2026-06-16 | elsahin | **Mouse navigation:** click-based item selection in all menus and scenes |
+| 2026-06-16 | elsahin | Config clamping improvements; recursion-limit increase for large maze generation |
+| 2026-06-16 | elsahin | New `level_count` config key (default 5); scoreboard reordering fix |
+| 2026-06-16 | zakburak | **Secret mode skin:** dedicated Pac-Man sprites (right/death animations) for "Fermis" mode |
+| 2026-06-16 | zakburak | **Asset manifest system:** `assets/manifest.json` + `src/views/assets.py`; dynamic skin/animation loading with `OverlaySkin` fallback |
+| 2026-06-16 | zakburak | **Secret mode activation:** cheat-code sequence `fermis` typed on main menu; `config.json` `"secret"` flag; title changes to FERMIS in pink |
+| 2026-06-16 | elsahin | Maze dimensions and speed tuning in `config.json` |
+| 2026-06-17 | zakburak | Fallback manifest in `settings.py` when `assets/manifest.json` is missing |
+| 2026-06-17 | zakburak | Ghost fright duration decreases by 500 ms per level (`FRIGHTENED_REDUCTION_PER_LEVEL`) |
+| 2026-06-17 | zakburak | Sprite rendering improvements; config fine-tuning |
+
+**Goal:** extend replayability (more levels, skins, mouse UX) and improve difficulty scaling.
 
 ---
 
@@ -82,7 +103,12 @@
 | Game mechanics (lives, timer, score) | Week 2 | Jun 9 | +3 days |
 | UI scenes + HUD | Week 2 | Jun 9–10 | +4 days |
 | Cheat mode | Week 3 | Jun 10 | On schedule |
+| Fruit system | Week 3 | Jun 10 | On schedule |
 | README + documentation | Week 3 | Jun 10 | On time |
+| Mouse navigation | — | Jun 16 | Added post-release |
+| Asset manifest + skin system | — | Jun 16 | Added post-release |
+| Secret mode ("Fermis") | — | Jun 16 | Added post-release |
+| Ghost fright scaling per level | — | Jun 17 | Added post-release |
 | Deployment (Itch.io / Steam) | Week 3 | **Not done** | — |
 | Project management documents | Week 3 | Jun 10 | Late |
 
@@ -158,7 +184,23 @@
 | Show ghost paths debug | Toggle in cheat menu | ✅ |
 | Show ghost targets debug | Toggle in cheat menu | ✅ |
 
-### 6.3 Known bugs found & fixed
+### 6.3 Extended features (Phase 5)
+
+| Feature | Test | Status |
+|---------|------|--------|
+| Fruit appears at 30 % pacgums eaten | Eat ~1/3 of dots | ✅ |
+| Fruit appears again at 70 % pacgums eaten | Eat ~2/3 of dots | ✅ |
+| Fruit disappears after 9 s | Wait without collecting | ✅ |
+| Fruit points scale with level | Check score on levels 1–5 | ✅ |
+| Mouse click selects menu item | Click option in main menu | ✅ |
+| `level_count` in config limits level total | Set `"level_count": 2`, win level 2 | ✅ |
+| `"secret": true` in config enables Fermis skin | Edit config, launch game | ✅ |
+| Typing `fermis` on menu activates secret mode | Spell out the code in menu | ✅ |
+| Secret mode changes title to FERMIS (pink) | Visual inspection | ✅ |
+| Fright duration shorter on higher levels | Compare level 1 vs level 5 after super-pacgum | ✅ |
+| Fallback manifest when `assets/manifest.json` missing | Remove manifest, launch | ✅ |
+
+### 6.4 Known bugs found & fixed
 
 | Bug | Commit fix |
 |-----|-----------|
@@ -178,3 +220,5 @@
 | Ghost speed vs. BFS path length (eaten mode) | Ghost needed to arrive at spawn exactly when timer expired | Dynamic speed = BFS path length / remaining time (in seconds) |
 | Inter-frame pacgum collection | At high speed, Pac-Man could skip over a pacgum cell between frames | `cells_visited` stores previous + current position; all intermediate cells checked |
 | Bitmap font missing glyphs | Fallback maze tile rendering exposed missing font asset path | `b769e38` — fallback debugger + error-resistant font loading |
+| Manifest missing at launch | If `assets/manifest.json` absent, asset loading failed silently | `1faca82` — full fallback manifest baked into `settings.py` |
+| Maze generation crash on large grids | Python recursion limit too low for big mazes | `0145b34` — explicit `sys.setrecursionlimit` increase |

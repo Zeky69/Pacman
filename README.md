@@ -45,13 +45,14 @@ The game takes **exactly one argument**: a JSON configuration file.
 
 ### Controls
 
-| Key | Action |
-|-----|--------|
+| Key / Input | Action |
+|-------------|--------|
 | Arrow keys / WASD | Move Pac-Man |
 | P / Escape | Pause |
 | C | Open cheat menu (during game or from pause) |
 | Enter / Space | Confirm selection in menus |
 | Escape | Back / close overlay |
+| Mouse click | Navigate and select in menus |
 
 ---
 
@@ -78,6 +79,8 @@ On missing or invalid keys the game logs a warning to stderr, falls back to the 
 | `pacman_speed` | float > 0 | `1.0` | Base Pac-Man speed multiplier |
 | `ghost_speed` | float > 0 | `1.0` | Base ghost speed multiplier |
 | `invincible` | bool | `false` | Start with invincibility enabled |
+| `level_count` | int > 0 | `5` | Number of levels to complete for a full win |
+| `secret` | bool | `false` | Enable secret "Fermis" skin with alternate Pac-Man textures |
 
 ### Minimal example (`config.json`)
 
@@ -171,11 +174,27 @@ In **frightened** mode (after a super-pacgum is eaten) ghosts reverse direction 
 
 ### Level progression
 
-Ghosts gain +10% speed per level (`GHOST_SPEEDUP_PER_LEVEL = 0.1`). Score and lives carry over between levels. The level timer pauses naturally because `update()` is not called while the game is paused.
+Ghosts gain +10 % speed per level (`GHOST_SPEEDUP_PER_LEVEL = 0.1`). The frightened duration after a super-pacgum is eaten decreases by 500 ms each level (`FRIGHTENED_REDUCTION_PER_LEVEL`), making later levels more dangerous. Score and lives carry over between levels. The number of levels is controlled by `level_count` (default 5). The level timer pauses naturally because `update()` is not called while the game is paused.
+
+### Fruit system
+
+Fruits appear at the centre of the maze twice per level, triggered at 30 % and 70 % of pacgums eaten. Each fruit stays visible for 9 seconds. The fruit type and point value advance with the level:
+
+| Level | Fruit | Points |
+|-------|-------|--------|
+| 1 | Cherry | 100 |
+| 2 | Strawberry | 300 |
+| 3–4 | Orange | 500 |
+| 5–6 | Apple | 700 |
+| 7+ | Galaxian | 2000 |
 
 ### Cheat mode
 
 Accessed with `C` during the game. Available toggles: godmode (invincibility), ghost freeze, speed boost (×2.5), show ghost BFS paths, show ghost targets. Actions: +1 life, skip level.
+
+### Secret mode
+
+Typing `f e r m i s` sequentially on the main menu activates the secret "Fermis" skin. The menu title changes to **FERMIS** (in pink) and Pac-Man is rendered with dedicated alternate sprites. The mode can also be enabled directly in `config.json` with `"secret": true`.
 
 ---
 
@@ -210,12 +229,13 @@ src/
 │   └── instructions_scene.py  Controls and rules
 │
 └── views/
-    ├── game_view.py    Top-level renderer (maze + entities + HUD)
+    ├── game_view.py    Top-level renderer (maze + entities + HUD + fruits)
     ├── maze_view.py    Tile-based maze renderer (auto-tiling)
     ├── sprite_view.py  Animated sprite renderer for entities
     ├── sprites.py      SpriteSheet loader and frame extractor
+    ├── assets.py       Asset manager: reads manifest.json, builds skin + animators
     ├── bitmap_font.py  Bitmap font renderer (from sprite sheet)
-    └── settings.py     View constants (tile size, colours, …)
+    └── settings.py     View constants (tile size, colours, manifest fallback)
 ```
 
 **Key relationships:**
@@ -235,18 +255,23 @@ Full project management documents (timeline, risk analysis, acceptance tests, bl
 
 The project was developed by two contributors:
 
-**zakburak** — core engine and game mechanics
+**zakburak** — core engine, game mechanics, and polish
 - Project scaffolding: MVC structure, configuration loading, asset pipeline
 - Maze model: doubled-grid representation, BFS reachability, pacgum/super-pacgum placement, auto-tiling renderer
 - Pac-Man entity: movement, wall collision, boundary clamping, hitbox, animation state tracking
-- Ghost AI: BFS pathfinding, individual targeting logic for Blinky, Pinky, Inky, and Clyde, frightened / eaten state machine, dynamic eaten-speed calculation
+- Ghost AI: BFS pathfinding, individual targeting logic for Blinky, Pinky, Inky, and Clyde, frightened / eaten state machine, dynamic eaten-speed calculation, fright duration scaling per level
 - Game loop: pacgum collection with inter-frame interpolation, ghost collision detection, score popups, level timer, respawn mechanics
+- Fruit system: spawn triggers, duration timer, level-indexed point table
+- Asset manifest: `assets/manifest.json` + `src/views/assets.py` skin system with default and secret overlay skins
+- Secret mode: "Fermis" skin, cheat-code activation in menu, `config.json` flag
 - Cheat menu: godmode, ghost freeze, speed boost, level skip, debug overlays (ghost paths and targets)
 - Ready-state display and death condition based on elapsed time
 
 **elsahin** — UI, scenes, and robustness
-- Config validation: defaults, clamping on invalid values, WASD support
+- Config validation: defaults, clamping on invalid values, recursion-limit fix for large mazes, WASD support
+- New config keys: `level_count`, config value clamping
 - Scene system: pause scene, game-over scene (score submission), win scene (score submission), highscore display
+- Mouse interaction: click-based navigation in menus and scenes
 - In-game HUD: bitmap font rendering, score / level / remaining time display
 - Maze view refactor: surface regeneration on level change
 - Font scaling and positioning across all scenes
@@ -255,8 +280,8 @@ The project was developed by two contributors:
 
 | Contributor | Commits | Main areas |
 |-------------|---------|------------|
-| zakburak | ~38 | Engine, AI, gameplay, cheat mode |
-| elsahin | ~10 | UI, scenes, config robustness |
+| zakburak | ~54 | Engine, AI, gameplay, fruits, asset manifest, secret mode |
+| elsahin | ~17 | UI, scenes, mouse nav, config robustness |
 
 ---
 

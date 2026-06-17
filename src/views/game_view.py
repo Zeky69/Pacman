@@ -109,6 +109,10 @@ class GameView:
         life_size = max(12, int(self.hud_bottom * 0.7))
         self._life_icon = self.assets.life_icon_source(life_size)
 
+        # Surface overlay partagée pour les dessins debug (paths, targets...).
+        # Pré-allouée une fois et réutilisée chaque frame via fill((0,0,0,0)).
+        self._overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+
     def _rebuild_maze_surface(self, maze: Maze) -> None:
         """(Re)génère le fond pré-rendu du labyrinthe pour `maze`.
 
@@ -175,7 +179,8 @@ class GameView:
 
     def _draw_ghost_paths(self, game: Game) -> None:
         """Dessine le chemin prévu de chaque fantôme avec sa couleur."""
-        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        overlay = self._overlay
+        overlay.fill((0, 0, 0, 0))
         for ghost in game.ghosts:
             path = ghost.compute_path(game.maze, game.pacman)
             if len(path) < 2:
@@ -204,7 +209,8 @@ class GameView:
         tc, tr = inky._target(game.pacman)
         tx, ty = self._tile_screen_pos(tc, tr)
 
-        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        overlay = self._overlay
+        overlay.fill((0, 0, 0, 0))
         pygame.draw.line(overlay, (0, 255, 255, 180), (bx, by), (tx, ty), 3)
         pygame.draw.circle(overlay, (255, 0,   0,   220), (bx, by), 6)   # Blinky
         pygame.draw.circle(overlay, (255, 255, 0,   220), (px, py), 6)   # Pac-Man (milieu)
@@ -213,7 +219,8 @@ class GameView:
 
     def _draw_ghost_targets(self, game: Game) -> None:
         """Petit carré coloré sur la case cible de chaque fantôme."""
-        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        overlay = self._overlay
+        overlay.fill((0, 0, 0, 0))
         sq = max(4, round(self.cell_pitch * 0.4))
         for ghost in game.ghosts:
             tc, tr = ghost._clamp_target(*ghost._target(game.pacman), game.maze)
@@ -230,7 +237,8 @@ class GameView:
             return
         px, py = self._entity_screen_pos(game.pacman)
         radius_px = round(Clyde.FLEE_RADIUS * self.cell_pitch * 2)
-        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        overlay = self._overlay
+        overlay.fill((0, 0, 0, 0))
         pygame.draw.circle(overlay, (255, 184, 81, 180), (px, py), radius_px, 2)
         self.screen.blit(overlay, (0, 0))
 
