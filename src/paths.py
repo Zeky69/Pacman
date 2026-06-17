@@ -26,6 +26,19 @@ def _project_root() -> str:
     return os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
+def app_dir() -> str:
+    """Dossier où l'utilisateur peut déposer des fichiers à côté du programme.
+
+    En exécutable PyInstaller, c'est le dossier qui *contient* l'exécutable
+    (``dist/pacman/``) — visible et éditable, contrairement aux ressources
+    embarquées en lecture seule. En développement, c'est la racine du projet.
+    Sert à chercher un ``config.json`` modifiable sans recompiler.
+    """
+    if _frozen():
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return _project_root()
+
+
 def resource_path(relative: str) -> str:
     """Chemin absolu d'une ressource *embarquée* (lecture seule).
 

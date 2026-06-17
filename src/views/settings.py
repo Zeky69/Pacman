@@ -370,7 +370,8 @@ def _extract_constants(manifest: dict[str, Any]) -> dict[str, Any]:
     _validate_animations(manifest["animations"], known_colors)
 
     return {
-        "SHEET_PATH": str(_sheet["path"]),
+        # Chemin résolu vers la planche embarquée (compatible exécutable PyInstaller).
+        "SHEET_PATH": resource_path(str(_sheet["path"])),
         "MACRO_ROW_HEIGHT": int(_sheet["macro_row_height"]),
         "LARGE_BLOCK_Y_OFFSET": int(_sheet["large_block_y_offset"]),
         "SMALL_BLOCK": dict(_sheet["small_block"]),
