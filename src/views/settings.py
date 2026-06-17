@@ -17,14 +17,21 @@ _FALLBACK_MANIFEST: dict[str, Any] = {
         "path": "assets/default.png",
         "macro_row_height": 186,
         "large_block_y_offset": 82,
-        "small_block": {"cell_w": 8, "cell_h": 8, "cell_margin": 1, "block_w": 199, "block_margin": 1},
-        "large_block": {"cell_w": 16, "cell_h": 16, "cell_margin": 1, "block_w": 171, "palette_w": 27, "block_margin": 2},
+        "small_block": {
+            "cell_w": 8, "cell_h": 8, "cell_margin": 1,
+            "block_w": 199, "block_margin": 1,
+        },
+        "large_block": {
+            "cell_w": 16, "cell_h": 16, "cell_margin": 1,
+            "block_w": 171, "palette_w": 27, "block_margin": 2,
+        },
     },
     "palettes": {
         "red": [0, 0], "pink": [1, 0], "cyan": [2, 0], "orange": [3, 0], "beige-2": [4, 0],
         "red-2": [0, 1], "black": [1, 1], "yellow": [2, 1], "blue": [3, 1], "white": [4, 1],
         "red-3": [0, 2], "beige": [1, 2], "white-2": [2, 2], "white-3": [3, 2], "orange-2": [4, 2],
-        "white-4": [0, 3], "yellow-2": [1, 3], "white-5": [2, 3], "beige-3": [3, 3], "fatih": [4, 3],
+        "white-4": [0, 3], "yellow-2": [1, 3], "white-5": [2, 3],
+        "beige-3": [3, 3], "fatih": [4, 3],
     },
     "palette_rgb": {
         "red": [220, 50, 50], "pink": [255, 184, 255], "cyan": [0, 220, 220],
@@ -36,7 +43,8 @@ _FALLBACK_MANIFEST: dict[str, Any] = {
         "beige-3": [195, 170, 120], "fatih": [150, 100, 200],
     },
     "ghost_colors": {
-        "red": [255, 0, 0], "pink": [255, 184, 255], "cyan": [0, 255, 255], "orange": [255, 184, 81],
+        "red": [255, 0, 0], "pink": [255, 184, 255],
+        "cyan": [0, 255, 255], "orange": [255, 184, 81],
     },
     "colors": {"wall": [33, 33, 200]},
     "tiles": {
@@ -68,7 +76,8 @@ _FALLBACK_MANIFEST: dict[str, Any] = {
             "border_wall_vertical_left": [19, 1], "border_corner_inner_top_left": [19, 6],
             "border_corner_outer_bottom_right": [17, 6], "border_wall_vertical_right": [21, 1],
             "border_corner_inner_top_right": [18, 6], "border_wall_horizontal_bottom": [20, 2],
-            "border_corner_inner_bottom_left": [17, 3], "border_corner_inner_bottom_right": [18, 3],
+            "border_corner_inner_bottom_left": [17, 3],
+            "border_corner_inner_bottom_right": [18, 3],
             "border_corner_inner_top_right_bottom": [16, 4],
             "border_corner_inner_bottom_right_top": [16, 5],
             "border_corner_inner_bottom_left_top": [19, 5],
@@ -116,8 +125,8 @@ _FALLBACK_MANIFEST: dict[str, Any] = {
                 "up":    {"frames": [[7, 3], [7, 4], [6, 5]], "loop": "pingpong", "y_flip": True},
                 "down":  {"from": "up", "y_flip": False},
                 "death_up": {
-                    "frames": [[0,3],[1,3],[2,3],[3,3],[4,3],[5,3],
-                               [0,4],[1,4],[2,4],[3,4],[4,4],[5,4]],
+                    "frames": [[0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3],
+                               [0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4]],
                     "loop": "once", "y_flip": True,
                 },
                 "death_down":  {"from": "death_up", "y_flip": False},
@@ -157,7 +166,10 @@ try:
     with open(_MANIFEST_PATH, encoding="utf-8") as _f:
         MANIFEST: dict[str, Any] = json.load(_f)
 except (FileNotFoundError, OSError, json.JSONDecodeError):
-    print(f"Avertissement : manifeste introuvable « {_MANIFEST_PATH} » — données de secours utilisées.")
+    print(
+        f"Avertissement : manifeste introuvable « {_MANIFEST_PATH} »"
+        " — données de secours utilisées."
+    )
     MANIFEST = _FALLBACK_MANIFEST
 
 

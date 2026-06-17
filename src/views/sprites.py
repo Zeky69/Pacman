@@ -95,10 +95,16 @@ def _thick_arc(surf: pygame.Surface,
 
 
 def _draw_pacman(col: int, row: int, scale: float) -> pygame.Surface:
-    side = LARGE_BLOCK["cell_w"] * scale
-    surf = pygame.Surface((side, side), pygame.SRCALPHA)
-    cx, cy, r = side // 2, side // 2, side // 2 - 1
+    side = int(LARGE_BLOCK["cell_w"] * scale)
+    
+    surf = pygame.Surface((side, side))
+    
+    magenta = (255, 0, 255)
+    
+    surf.fill(magenta)
+    surf.set_colorkey(magenta)
 
+    cx, cy, r = side // 2, side // 2, side // 2 - 1
     gap = {3: 38, 4: 18}.get(row, 0)
 
     pygame.draw.circle(surf, (255, 220, 0), (cx, cy), r)
@@ -109,20 +115,43 @@ def _draw_pacman(col: int, row: int, scale: float) -> pygame.Surface:
             rad = math.radians(deg)
             pts.append((cx + r * math.cos(rad), cy + r * math.sin(rad)))
         if len(pts) >= 3:
-            pygame.draw.polygon(surf, (0, 0, 0, 0), pts)
+            pygame.draw.polygon(surf, magenta, pts)
 
     return surf
 
 
+def _draw_pacman_vertical(row: int, scale: float) -> pygame.Surface:
+    side = int(LARGE_BLOCK["cell_w"] * scale)
+    surf = pygame.Surface((side, side))
+    magenta = (255, 0, 255)
+    surf.fill(magenta)
+    surf.set_colorkey(magenta)
+    cx, cy, r = side // 2, side // 2, side // 2 - 1
+    gap = {3: 38, 4: 18}.get(row, 0)
+    pygame.draw.circle(surf, (255, 220, 0), (cx, cy), r)
+    if gap > 0:
+        pts = [(cx, cy)]
+        for deg in range(90 - gap, 90 + gap + 1, 3):
+            rad = math.radians(deg)
+            pts.append((cx + r * math.cos(rad), cy + r * math.sin(rad)))
+        if len(pts) >= 3:
+            pygame.draw.polygon(surf, magenta, pts)
+    return surf
+
+
 def _draw_ghost(color: tuple[int, int, int], scale: float) -> pygame.Surface:
-    side = LARGE_BLOCK["cell_w"] * scale
-    surf = pygame.Surface((side, side), pygame.SRCALPHA)
+    side = int(LARGE_BLOCK["cell_w"] * scale)    
+    surf = pygame.Surface((side, side))
+    
+    magenta = (255, 0, 255)
+    surf.fill(magenta)
+    surf.set_colorkey(magenta)
 
     pygame.draw.ellipse(surf, color, (0, 0, side, side * 2 // 3 + 2))
-    pygame.draw.rect(surf, color, (0, side // 3, side, side * 2 // 3))
+    pygame.draw.rect(surf, color, (0, side // 3, side, side * 2 // 3))    
     bw = side // 3
     for i in range(3):
-        pygame.draw.circle(surf, (0, 0, 0, 0), (i * bw + bw // 2, side), bw // 2 + 1)
+        pygame.draw.circle(surf, magenta, (i * bw + bw // 2, side), bw // 2 + 1)
 
     er = max(2, side // 7)
     for ex in (side // 3, side * 2 // 3):
@@ -135,8 +164,10 @@ def _draw_ghost(color: tuple[int, int, int], scale: float) -> pygame.Surface:
 
 def _draw_frightened_ghost(scale: float, blinking: bool = False) -> pygame.Surface:
     color = (255, 255, 255) if blinking else (33, 33, 200)
-    side = LARGE_BLOCK["cell_w"] * scale
+    side = int(LARGE_BLOCK["cell_w"] * scale)
+    
     surf = _draw_ghost(color, scale)
+    
     my = side * 6 // 11
     pts = [(side // 5 + i * (side // 8),
             my + (side // 14 if i % 2 == 0 else -side // 14))
@@ -160,6 +191,8 @@ def _draw_eyes_only(scale: float) -> pygame.Surface:
 def _draw_large_fallback(macro_row: int, palette_index: int,
                          col: int, row: int, scale: float) -> pygame.Surface:
     if macro_row == 1 and palette_index == 2:
+        if col == 7:
+            return _draw_pacman_vertical(row, scale)
         return _draw_pacman(col, row, scale)
     if macro_row == 1 and palette_index == 1:
         return _draw_eyes_only(scale)

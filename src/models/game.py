@@ -329,7 +329,8 @@ class Game:
         elif cell in self.maze.super_pacgums:
             self.maze.super_pacgums.discard(cell)
             self.score += self.config.get("points_per_super_pacgum", 50)
-            duration = max(1000, FRIGHTENED_DURATION - FRIGHTENED_REDUCTION_PER_LEVEL * (self.level - 1))
+            reduction = FRIGHTENED_REDUCTION_PER_LEVEL * (self.level - 1)
+            duration = max(1000, FRIGHTENED_DURATION - reduction)
             for ghost in self.ghosts:
                 ghost.frighten(now + duration)
 
