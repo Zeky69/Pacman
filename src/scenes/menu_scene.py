@@ -1,10 +1,13 @@
 """Scène du menu principal : navigation clavier entre les options."""
 
+import math
 import pygame
 
 from .scene import Scene, AppProtocol, menu_mouse
 from ..views.bitmap_font import BitmapFont
 from ..views.settings import MANIFEST_WARNING
+
+_GOOFY_COLORS = ("pink", "cyan", "yellow", "orange", "white", "red")
 
 BACKGROUND = (0, 0, 0)
 
@@ -34,6 +37,13 @@ class MenuScene(Scene):
         self.font = BitmapFont(app.sheet, "white", scale=small)
         self.font_sel = BitmapFont(app.sheet, "yellow", scale=small)
         self.font_warn = BitmapFont(app.sheet, "red", scale=max(1, small - 1))
+        self._secret_activated_at: int = -1
+        self._goofy_title_fonts = [
+            BitmapFont(app.sheet, c, scale=big) for c in _GOOFY_COLORS
+        ]
+        self._goofy_item_fonts = [
+            BitmapFont(app.sheet, c, scale=small) for c in _GOOFY_COLORS
+        ]
 
     def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
         self.selected, clicked = menu_mouse(events, self._item_rects, self.selected)
@@ -59,6 +69,7 @@ class MenuScene(Scene):
             self._secret_progress += 1
             if self._secret_progress == len(_SECRET_KEYS):
                 self.app.config["secret"] = True
+                self._secret_activated_at = pygame.time.get_ticks()
                 self._secret_progress = 0
         else:
             # Touche inattendue : on repart de zéro (ou de 1 si c'est le « f »).
@@ -79,6 +90,39 @@ class MenuScene(Scene):
         elif choice == "Exit":
             self.app.quit()
 
+    def _draw_goofy_title(self, screen: pygame.Surface, now: int,
+                          w: int, top: int, title_h: int) -> None:
+        """Titre 'FERMIS' : chaque lettre rebondit et change de couleur."""
+        title = "FERMIS"
+        nc = len(_GOOFY_COLORS)
+        char_w = self._goofy_title_fonts[0].cell
+        total_w = len(title) * char_w
+        base_x = w // 2 - total_w // 2
+        base_y = top + title_h // 2
+
+        reveal_ms = 1000
+        elapsed = now - self._secret_activated_at
+
+        for i, ch in enumerate(title):
+            cx = base_x + i * char_w + char_w // 2
+
+            if elapsed < reveal_ms:
+                t = elapsed / reveal_ms
+                # Chaque lettre arrive d'une direction différente
+                ox = int(((i * 137 + 73) % 500 - 250) * (1 - t) ** 2)
+                oy = int(((i * 251 + 31) % 400 - 200) * (1 - t) ** 2)
+                angle = ((i * 97 + 11) % 360) * (1 - t)
+                cy = base_y + oy
+                fi = i % nc
+                surf = self._goofy_title_fonts[fi].render(ch)
+                surf = pygame.transform.rotate(surf, angle)
+                screen.blit(surf, surf.get_rect(center=(cx + ox, cy)))
+            else:
+                bounce = round(math.sin(now / 180.0 + i * 0.9) * 14)
+                fi = (now // 120 + i * 2) % nc
+                self._goofy_title_fonts[fi].draw(
+                    screen, ch, center=(cx, base_y + bounce))
+
     def draw(self, screen: pygame.Surface, now: int) -> None:
         screen.fill(BACKGROUND)
         w, h = screen.get_size()
@@ -91,10 +135,9 @@ class MenuScene(Scene):
         group_gap = title_h
         top = (h - (title_h + group_gap + items_h)) // 2
 
-        # Mode secret activé (cheat « fermis ») : titre « FERMIS » en rose.
-        if self.app.config.get("secret"):
-            self.title_font_secret.draw(screen, "FERMIS",
-                                        center=(w // 2, top + title_h // 2))
+        secret = self.app.config.get("secret", False)
+        if secret:
+            self._draw_goofy_title(screen, now, w, top, title_h)
         else:
             self.title_font.draw(screen, "PAC-MAN",
                                  center=(w // 2, top + title_h // 2))
