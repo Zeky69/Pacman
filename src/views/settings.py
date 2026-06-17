@@ -7,10 +7,11 @@ de `SpriteSheet` prend alors le relais si la planche PNG manque aussi.
 """
 
 import json
-import os
 from typing import Any, Optional
 
-_MANIFEST_PATH = os.path.join("assets", "manifest.json")
+from ..paths import resource_path
+
+_MANIFEST_PATH = resource_path("assets/manifest.json")
 
 _FALLBACK_MANIFEST: dict[str, Any] = {
     "sheet": {

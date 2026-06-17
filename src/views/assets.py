@@ -16,6 +16,7 @@ import pygame
 from .sprites import SpriteSheet
 from .sprite_view import Animator
 from . import settings
+from ..paths import resource_path
 
 _Frames = tuple[list[pygame.Surface], str]
 
@@ -147,12 +148,12 @@ class Assets:
                  manifest: Optional[dict[str, Any]] = None) -> None:
         if manifest is None:
             manifest = settings.MANIFEST
-        self.sheet = SpriteSheet(manifest["sheet"]["path"])
+        self.sheet = SpriteSheet(resource_path(manifest["sheet"]["path"]))
         self.animations: dict[str, Any] = manifest["animations"]
         base = SheetSkin(self.sheet, self.animations)
         skin_def = manifest.get("skins", {}).get("secret" if secret else "default", {})
         if secret and skin_def.get("overrides"):
-            png = PngFolder(skin_def["dir"])
+            png = PngFolder(resource_path(skin_def["dir"]))
             self.skin: Skin = OverlaySkin(
                 base, png, skin_def["overrides"], self.animations)
         else:

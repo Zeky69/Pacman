@@ -264,13 +264,13 @@ The project was developed by two contributors:
 - Fruit system: spawn triggers, duration timer, level-indexed point table
 - Asset manifest: `assets/manifest.json` + `src/views/assets.py` skin system with default and secret overlay skins
 - Secret mode: "Fermis" skin, cheat-code activation in menu, `config.json` flag
-- Cheat menu: godmode, ghost freeze, speed boost, level skip, debug overlays (ghost paths and targets)
 - Ready-state display and death condition based on elapsed time
 
 **elsahin** — UI, scenes, and robustness
 - Config validation: defaults, clamping on invalid values, recursion-limit fix for large mazes, WASD support
 - New config keys: `level_count`, config value clamping
 - Scene system: pause scene, game-over scene (score submission), win scene (score submission), highscore display
+- Cheat menu: godmode, ghost freeze, speed boost, level skip, debug overlays (ghost paths and targets)
 - Mouse interaction: click-based navigation in menus and scenes
 - In-game HUD: bitmap font rendering, score / level / remaining time display
 - Maze view refactor: surface regeneration on level change

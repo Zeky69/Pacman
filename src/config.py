@@ -17,6 +17,8 @@ import json
 import sys
 from typing import Any
 
+from .paths import user_data_path
+
 DEFAULT_CONFIG_PATH = "config.json"
 
 # Valeurs par défaut sûres pour chaque clé connue.
@@ -155,4 +157,8 @@ def load_config(path: str = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
         sys.exit(f"Error: '{path}' must contain a JSON object "
                  f"(e.g. {{\"width\": 20, \"height\": 20}}).")
 
-    return _normalize(data)
+    config = _normalize(data)
+    # Le bundle PyInstaller étant en lecture seule, on redirige le fichier de
+    # scores vers un dossier de données utilisateur inscriptible (no-op en dev).
+    config["highscore_filename"] = user_data_path(config["highscore_filename"])
+    return config
