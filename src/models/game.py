@@ -14,6 +14,7 @@ HALF = TILE_PX // 2
 
 DEFAULT_LEVEL_COUNT = 10
 GHOST_SPEEDUP_PER_LEVEL = 0.1
+GHOST_SPEED_MAX = 10.0  # vitesse max des fantômes, quelle que soit la config
 FRIGHTENED_REDUCTION_PER_LEVEL = 500  # ms de moins par niveau
 READY_MS = 2000
 
@@ -81,7 +82,13 @@ class Game:
     def _ghost_speed(self) -> float:
         """Vitesse des fantômes au niveau courant (accélère par palier)."""
         factor = 1 + GHOST_SPEEDUP_PER_LEVEL * (self.level - 1)
-        return self._base_ghost_speed * factor
+        raw = self._base_ghost_speed * factor
+        if raw > GHOST_SPEED_MAX:
+            print(
+                f"[game] vitesse des fantômes plafonnée à {GHOST_SPEED_MAX} "
+                f"(demandée : {raw:.1f})"
+            )
+        return min(raw, GHOST_SPEED_MAX)
 
     def _build_maze(self) -> None:
         """(Re)construit le labyrinthe du niveau + ses rectangles de murs.

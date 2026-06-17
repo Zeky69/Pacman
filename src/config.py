@@ -59,6 +59,7 @@ _POSITIVE_FLOAT_KEYS = ("pacman_speed", "ghost_speed")
 _RANGES = {
     "width": (5, 35),
     "height": (5, 35),
+    "lives": (1, 99),
 }
 
 
