@@ -211,8 +211,8 @@ _REQUIRED_VARIANTS: dict[str, set[str]] = {
     "ghost":  {"right", "left", "up", "down", "frightened"},
 }
 _REQUIRED_GHOST_STATES = {"normal", "eaten", "frightened"}
-_REQUIRED_GUM_TILES    = {"small", "big"}
-_REQUIRED_SCORE_TILES  = {"200", "400", "800", "1600"}
+_REQUIRED_GUM_TILES = {"small", "big"}
+_REQUIRED_SCORE_TILES = {"200", "400", "800", "1600"}
 
 
 def _validate_animations(animations: Any, known_colors: set[str]) -> None:
@@ -270,7 +270,8 @@ def _validate_animations(animations: Any, known_colors: set[str]) -> None:
                         raise ValueError(
                             f"animations.{anim_name}.variants.{vname}"
                             f".frames[{i}] doit être [col, row]")
-                    int(fr[0]); int(fr[1])
+                    int(fr[0])
+                    int(fr[1])
 
     # --- Ghost states ---
     ghost_states = animations.get("ghost", {}).get("states")
@@ -327,7 +328,8 @@ def _validate_food(food: Any, known_colors: set[str]) -> None:
         for i, fr in enumerate(frames):
             if not isinstance(fr, (list, tuple)) or len(fr) != 2:
                 raise ValueError(f"food.{fname}.frame[{i}] doit être [col, row]")
-            int(fr[0]); int(fr[1])
+            int(fr[0])
+            int(fr[1])
         if "default_color" not in fdef:
             raise KeyError(f"food.{fname} : clé 'default_color' manquante")
         color = fdef["default_color"]
@@ -341,8 +343,8 @@ def _extract_constants(manifest: dict[str, Any]) -> dict[str, Any]:
     """Extrait et valide toutes les constantes typées du manifeste."""
     _sheet = manifest["sheet"]
     _tiles = manifest["tiles"]
-    _maze  = manifest["maze"]
-    _wall  = manifest["colors"]["wall"]
+    _maze = manifest["maze"]
+    _wall = manifest["colors"]["wall"]
 
     # Palettes : validation structurelle + collecte des noms connus.
     palettes = manifest["palettes"]
@@ -351,7 +353,8 @@ def _extract_constants(manifest: dict[str, Any]) -> dict[str, Any]:
     for pname, pval in palettes.items():
         if not isinstance(pval, (list, tuple)) or len(pval) != 2:
             raise ValueError(f"palettes.{pname} doit être [col, row]")
-        int(pval[0]); int(pval[1])
+        int(pval[0])
+        int(pval[1])
     known_colors: set[str] = set(palettes.keys())
 
     # Tiles requises.

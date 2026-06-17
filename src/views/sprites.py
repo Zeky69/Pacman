@@ -96,11 +96,11 @@ def _thick_arc(surf: pygame.Surface,
 
 def _draw_pacman(col: int, row: int, scale: float) -> pygame.Surface:
     side = int(LARGE_BLOCK["cell_w"] * scale)
-    
+
     surf = pygame.Surface((side, side))
-    
+
     magenta = (255, 0, 255)
-    
+
     surf.fill(magenta)
     surf.set_colorkey(magenta)
 
@@ -113,7 +113,7 @@ def _draw_pacman(col: int, row: int, scale: float) -> pygame.Surface:
         pts = [(cx, cy)]
         for deg in range(-gap, gap + 1, 3):
             rad = math.radians(deg)
-            pts.append((cx + r * math.cos(rad), cy + r * math.sin(rad)))
+            pts.append((int(cx + r * math.cos(rad)), int(cy + r * math.sin(rad))))
         if len(pts) >= 3:
             pygame.draw.polygon(surf, magenta, pts)
 
@@ -133,22 +133,22 @@ def _draw_pacman_vertical(row: int, scale: float) -> pygame.Surface:
         pts = [(cx, cy)]
         for deg in range(90 - gap, 90 + gap + 1, 3):
             rad = math.radians(deg)
-            pts.append((cx + r * math.cos(rad), cy + r * math.sin(rad)))
+            pts.append((int(cx + r * math.cos(rad)), int(cy + r * math.sin(rad))))
         if len(pts) >= 3:
             pygame.draw.polygon(surf, magenta, pts)
     return surf
 
 
 def _draw_ghost(color: tuple[int, int, int], scale: float) -> pygame.Surface:
-    side = int(LARGE_BLOCK["cell_w"] * scale)    
+    side = int(LARGE_BLOCK["cell_w"] * scale)
     surf = pygame.Surface((side, side))
-    
+
     magenta = (255, 0, 255)
     surf.fill(magenta)
     surf.set_colorkey(magenta)
 
     pygame.draw.ellipse(surf, color, (0, 0, side, side * 2 // 3 + 2))
-    pygame.draw.rect(surf, color, (0, side // 3, side, side * 2 // 3))    
+    pygame.draw.rect(surf, color, (0, side // 3, side, side * 2 // 3))
     bw = side // 3
     for i in range(3):
         pygame.draw.circle(surf, magenta, (i * bw + bw // 2, side), bw // 2 + 1)
@@ -165,9 +165,9 @@ def _draw_ghost(color: tuple[int, int, int], scale: float) -> pygame.Surface:
 def _draw_frightened_ghost(scale: float, blinking: bool = False) -> pygame.Surface:
     color = (255, 255, 255) if blinking else (33, 33, 200)
     side = int(LARGE_BLOCK["cell_w"] * scale)
-    
+
     surf = _draw_ghost(color, scale)
-    
+
     my = side * 6 // 11
     pts = [(side // 5 + i * (side // 8),
             my + (side // 14 if i % 2 == 0 else -side // 14))
