@@ -24,8 +24,8 @@ DEFAULT_CONFIG_PATH = "config.json"
 # Valeurs par défaut sûres pour chaque clé connue.
 DEFAULTS = {
     "highscore_filename": "scoreboard.json",
-    "width": 20,
-    "height": 20,
+    "width": 10,
+    "height": 10,
     "lives": 3,
     "pacgum": 42,
     "points_per_pacgum": 10,

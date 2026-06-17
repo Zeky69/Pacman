@@ -296,6 +296,7 @@ The project was developed by two contributors:
 - In-game HUD: bitmap font rendering, score / level / remaining time display
 - Maze view refactor: surface regeneration on level change
 - Font scaling and positioning across all scenes
+- Game publication on [Itch.io](https://thorfinn61.itch.io/pac-man)
 
 ### Contribution summary
 
