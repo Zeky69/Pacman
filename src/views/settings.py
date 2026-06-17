@@ -198,9 +198,93 @@ def _coords(table: dict[str, Any]) -> dict[str, tuple[int, int]]:
     return {k: (v[0], v[1]) for k, v in table.items()}
 
 
-def _rgb(table: dict[str, Any]) -> dict[str, tuple[int, int, int]]:
-    """name -> (r, g, b)."""
-    return {k: (v[0], v[1], v[2]) for k, v in table.items()}
+# Garde-fous numériques : au-delà de ces bornes, pygame plante (allocation de
+# surface impossible, couleur invalide…). On préfère retomber sur le fallback.
+_MAX_DIM = 4096        # côté de cellule / largeur de bloc raisonnable (pixels)
+_MAX_OFFSET = 1_000_000  # décalage vertical dans la planche
+_SMALL_BLOCK_KEYS = {"cell_w", "cell_h", "cell_margin", "block_w", "block_margin"}
+_LARGE_BLOCK_KEYS = {"cell_w", "cell_h", "cell_margin",
+                     "block_w", "palette_w", "block_margin"}
+_REQUIRED_BORDER_EDGES = {"TL", "TR", "BL", "BR", "T", "B", "L", "R"}
+
+
+def _checked_int(value: Any, name: str, lo: int, hi: int) -> int:
+    """Convertit en int et vérifie l'appartenance à [lo, hi] (anti valeurs absurdes)."""
+    n = int(value)
+    if not lo <= n <= hi:
+        raise ValueError(f"{name} = {n} hors limites [{lo}, {hi}]")
+    return n
+
+
+def _checked_rgb(table: Any, name: str) -> dict[str, tuple[int, int, int]]:
+    """name -> (r, g, b), chaque composante bornée à [0, 255] (anti crash pygame)."""
+    if not isinstance(table, dict):
+        raise TypeError(f"'{name}' doit être un objet")
+    out: dict[str, tuple[int, int, int]] = {}
+    for k, v in table.items():
+        if not isinstance(v, (list, tuple)) or len(v) != 3:
+            raise ValueError(f"{name}.{k} doit être [r, g, b]")
+        out[k] = (
+            _checked_int(v[0], f"{name}.{k}", 0, 255),
+            _checked_int(v[1], f"{name}.{k}", 0, 255),
+            _checked_int(v[2], f"{name}.{k}", 0, 255),
+        )
+    return out
+
+
+def _validate_block(block: Any, name: str, required: set[str]) -> dict[str, int]:
+    """Valide un bloc de géométrie (small/large) : clés requises + ints bornés."""
+    if not isinstance(block, dict):
+        raise TypeError(f"sheet.{name} doit être un objet")
+    missing = required - block.keys()
+    if missing:
+        raise KeyError(
+            f"sheet.{name} : clé(s) manquante(s) : {', '.join(sorted(missing))}")
+    out: dict[str, int] = {
+        k: _checked_int(v, f"sheet.{name}.{k}", 0, _MAX_DIM)
+        for k, v in block.items()
+    }
+    for dim in ("cell_w", "cell_h"):
+        if out[dim] < 1:
+            raise ValueError(f"sheet.{name}.{dim} doit être >= 1")
+    return out
+
+
+def _validate_maze(maze: Any) -> None:
+    """Valide la section 'maze' : tuiles, corner_map et tous les bords requis.
+
+    Un bord manquant dans 'border_maps' provoquerait sinon un KeyError au rendu
+    (cf. MazeView._active_map).
+    """
+    if not isinstance(maze, dict):
+        raise TypeError("'maze' doit être un objet")
+    tiles = maze.get("tiles")
+    if not isinstance(tiles, dict) or not tiles:
+        raise TypeError("maze.tiles doit être un objet non vide")
+    for tname, coords in tiles.items():
+        if not isinstance(coords, (list, tuple)) or len(coords) != 2:
+            raise ValueError(f"maze.tiles.{tname} doit être [col, row]")
+        int(coords[0]); int(coords[1])  # noqa: E702
+
+    corner_map = maze.get("corner_map")
+    if not isinstance(corner_map, dict):
+        raise TypeError("maze.corner_map doit être un objet")
+    for code in corner_map:
+        int(code)  # les clés sont des codes numériques
+
+    border_maps = maze.get("border_maps")
+    if not isinstance(border_maps, dict):
+        raise TypeError("maze.border_maps doit être un objet")
+    missing_edges = _REQUIRED_BORDER_EDGES - border_maps.keys()
+    if missing_edges:
+        raise KeyError(
+            f"maze.border_maps : bord(s) manquant(s) : "
+            f"{', '.join(sorted(missing_edges))}")
+    for edge, mapping in border_maps.items():
+        if not isinstance(mapping, dict):
+            raise TypeError(f"maze.border_maps.{edge} doit être un objet")
+        for code in mapping:
+            int(code)
 
 
 # Variantes requises par le code (game_view + _animator_for).
@@ -345,6 +429,8 @@ def _extract_constants(manifest: dict[str, Any]) -> dict[str, Any]:
     _tiles = manifest["tiles"]
     _maze = manifest["maze"]
     _wall = manifest["colors"]["wall"]
+    if not isinstance(_wall, (list, tuple)) or len(_wall) != 3:
+        raise ValueError("colors.wall doit être [r, g, b]")
 
     # Palettes : validation structurelle + collecte des noms connus.
     palettes = manifest["palettes"]
@@ -371,18 +457,25 @@ def _extract_constants(manifest: dict[str, Any]) -> dict[str, Any]:
 
     _validate_food(manifest["food"], known_colors)
     _validate_animations(manifest["animations"], known_colors)
+    _validate_maze(_maze)
 
     return {
         # Chemin résolu vers la planche embarquée (compatible exécutable PyInstaller).
         "SHEET_PATH": resource_path(str(_sheet["path"])),
-        "MACRO_ROW_HEIGHT": int(_sheet["macro_row_height"]),
-        "LARGE_BLOCK_Y_OFFSET": int(_sheet["large_block_y_offset"]),
-        "SMALL_BLOCK": dict(_sheet["small_block"]),
-        "LARGE_BLOCK": dict(_sheet["large_block"]),
+        "MACRO_ROW_HEIGHT": _checked_int(
+            _sheet["macro_row_height"], "sheet.macro_row_height", 0, _MAX_OFFSET),
+        "LARGE_BLOCK_Y_OFFSET": _checked_int(
+            _sheet["large_block_y_offset"], "sheet.large_block_y_offset", 0, _MAX_OFFSET),
+        "SMALL_BLOCK": _validate_block(_sheet["small_block"], "small_block", _SMALL_BLOCK_KEYS),
+        "LARGE_BLOCK": _validate_block(_sheet["large_block"], "large_block", _LARGE_BLOCK_KEYS),
         "COLORS": _coords(palettes),
-        "PALETTE_RGB": _rgb(manifest["palette_rgb"]),
-        "GHOST_COLORS": _rgb(manifest["ghost_colors"]),
-        "WALL_BLUE": (int(_wall[0]), int(_wall[1]), int(_wall[2])),
+        "PALETTE_RGB": _checked_rgb(manifest["palette_rgb"], "palette_rgb"),
+        "GHOST_COLORS": _checked_rgb(manifest["ghost_colors"], "ghost_colors"),
+        "WALL_BLUE": (
+            _checked_int(_wall[0], "colors.wall", 0, 255),
+            _checked_int(_wall[1], "colors.wall", 0, 255),
+            _checked_int(_wall[2], "colors.wall", 0, 255),
+        ),
         "GOMMES_TILES": _coords(gommes),
         "SCORE_SPRITE": _coords(score_tiles),
         "ASCII_TILE": _coords(_tiles["ascii"]),

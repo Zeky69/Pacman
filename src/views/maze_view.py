@@ -34,7 +34,10 @@ class MazeView:
         if cx == 0 or cx == maze.width or cy == 0 or cy == maze.height:
             return None
         border = maze.border_type(cx, cy)
-        return self._border_maps[border] if border else self._corner_map
+        if not border:
+            return self._corner_map
+        # .get : un bord absent de la table ne dessine rien plutôt que de planter.
+        return self._border_maps.get(border)
 
     def draw(self, surface: pygame.Surface, maze: Any,
              offset_x: int = 0, offset_y: int = 0) -> None:
