@@ -14,6 +14,7 @@ HALF = TILE_PX // 2
 
 DEFAULT_LEVEL_COUNT = 10
 GHOST_SPEEDUP_PER_LEVEL = 0.1
+FRIGHTENED_REDUCTION_PER_LEVEL = 500  # ms de moins par niveau
 READY_MS = 2000
 
 # Fruits bonus (comme Pac-Man original) : (nom, points).
@@ -328,9 +329,9 @@ class Game:
         elif cell in self.maze.super_pacgums:
             self.maze.super_pacgums.discard(cell)
             self.score += self.config.get("points_per_super_pacgum", 50)
-            until = now + FRIGHTENED_DURATION
+            duration = max(1000, FRIGHTENED_DURATION - FRIGHTENED_REDUCTION_PER_LEVEL * (self.level - 1))
             for ghost in self.ghosts:
-                ghost.frighten(until)
+                ghost.frighten(now + duration)
 
     def _collect(self, now: int = 0) -> None:
         # Itérer TOUTES les cases de la grille doublée traversées ce frame,
