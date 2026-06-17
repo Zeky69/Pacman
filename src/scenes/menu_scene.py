@@ -4,6 +4,7 @@ import pygame
 
 from .scene import Scene, AppProtocol, menu_mouse
 from ..views.bitmap_font import BitmapFont
+from ..views.settings import MANIFEST_WARNING
 
 BACKGROUND = (0, 0, 0)
 
@@ -32,6 +33,7 @@ class MenuScene(Scene):
         self.title_font_secret = BitmapFont(app.sheet, "pink", scale=big)
         self.font = BitmapFont(app.sheet, "white", scale=small)
         self.font_sel = BitmapFont(app.sheet, "yellow", scale=small)
+        self.font_warn = BitmapFont(app.sheet, "red", scale=max(1, small - 1))
 
     def handle_events(self, events: list[pygame.event.Event], now: int) -> None:
         self.selected, clicked = menu_mouse(events, self._item_rects, self.selected)
@@ -103,3 +105,9 @@ class MenuScene(Scene):
             font = self.font_sel if i == self.selected else self.font
             rect = font.draw(screen, option, center=(w // 2, start_y + i * gap))
             self._item_rects.append(rect.inflate(40, 16))
+
+        if MANIFEST_WARNING:
+            self.font_warn.draw(
+                screen, "! MANIFEST INVALIDE - FALLBACK CHARGE !",
+                center=(w // 2, h - self.font_warn.height),
+            )

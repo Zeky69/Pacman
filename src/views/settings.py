@@ -162,15 +162,34 @@ _FALLBACK_MANIFEST: dict[str, Any] = {
     "skins": {"default": {}, "secret": {"dir": "assets/sprites", "overrides": {}}},
 }
 
+MANIFEST_WARNING: Optional[str] = None
+
+_REQUIRED_KEYS = (
+    "sheet", "palettes", "palette_rgb", "ghost_colors",
+    "colors", "tiles", "maze", "food", "animations",
+)
+
 try:
     with open(_MANIFEST_PATH, encoding="utf-8") as _f:
-        MANIFEST: dict[str, Any] = json.load(_f)
-except (FileNotFoundError, OSError, json.JSONDecodeError):
-    print(
-        f"Avertissement : manifeste introuvable « {_MANIFEST_PATH} »"
-        " — données de secours utilisées."
+        _candidate: dict[str, Any] = json.load(_f)
+    _missing = [k for k in _REQUIRED_KEYS if k not in _candidate]
+    if _missing:
+        raise KeyError(f"clés manquantes : {', '.join(_missing)}")
+    MANIFEST: dict[str, Any] = _candidate
+except FileNotFoundError:
+    MANIFEST_WARNING = (
+        f"Manifeste introuvable « {_MANIFEST_PATH} » — fallback chargé."
     )
     MANIFEST = _FALLBACK_MANIFEST
+except json.JSONDecodeError as _e:
+    MANIFEST_WARNING = f"Manifeste invalide (JSON malformé : {_e}) — fallback chargé."
+    MANIFEST = _FALLBACK_MANIFEST
+except (OSError, KeyError, TypeError, ValueError) as _e:
+    MANIFEST_WARNING = f"Manifeste invalide ({_e}) — fallback chargé."
+    MANIFEST = _FALLBACK_MANIFEST
+
+if MANIFEST_WARNING:
+    print(f"Avertissement : {MANIFEST_WARNING}")
 
 
 def _coords(table: dict[str, Any]) -> dict[str, tuple[int, int]]:
@@ -183,36 +202,228 @@ def _rgb(table: dict[str, Any]) -> dict[str, tuple[int, int, int]]:
     return {k: (v[0], v[1], v[2]) for k, v in table.items()}
 
 
+# Variantes requises par le code (game_view + _animator_for).
+_REQUIRED_VARIANTS: dict[str, set[str]] = {
+    "pacman": {"right", "left", "up", "down",
+               "death_up", "death_down", "death_right", "death_left"},
+    "gum":    {"small", "big"},
+    "ghost":  {"right", "left", "up", "down", "frightened"},
+}
+_REQUIRED_GHOST_STATES = {"normal", "eaten", "frightened"}
+_REQUIRED_GUM_TILES    = {"small", "big"}
+_REQUIRED_SCORE_TILES  = {"200", "400", "800", "1600"}
+
+
+def _validate_animations(animations: Any, known_colors: set[str]) -> None:
+    """Valide la section 'animations' en entier."""
+    if not isinstance(animations, dict):
+        raise TypeError("'animations' doit être un objet")
+
+    for anim_name, req_variants in _REQUIRED_VARIANTS.items():
+        if anim_name not in animations:
+            raise KeyError(f"animation '{anim_name}' manquante")
+        adef = animations[anim_name]
+        if not isinstance(adef, dict):
+            raise TypeError(f"animations.{anim_name} doit être un objet")
+
+        # palette optionnelle mais si présente doit être [int, int]
+        if "palette" in adef:
+            p = adef["palette"]
+            if not (isinstance(p, (list, tuple)) and len(p) == 2):
+                raise ValueError(
+                    f"animations.{anim_name}.palette doit être [col, row]")
+            int(p[0]); int(p[1])  # noqa: raises ValueError si non-numérique
+
+        variants = adef.get("variants")
+        if not isinstance(variants, dict):
+            raise TypeError(f"animations.{anim_name}.variants doit être un objet")
+
+        missing = req_variants - variants.keys()
+        if missing:
+            raise KeyError(
+                f"animations.{anim_name}.variants : "
+                f"variante(s) manquante(s) : {', '.join(sorted(missing))}")
+
+        for vname, vdef in variants.items():
+            if not isinstance(vdef, dict):
+                raise TypeError(
+                    f"animations.{anim_name}.variants.{vname} doit être un objet")
+            if "from" in vdef:
+                ref = vdef["from"]
+                if ref not in variants:
+                    raise KeyError(
+                        f"animations.{anim_name}.variants.{vname}.from : "
+                        f"référence '{ref}' inexistante")
+            elif "frames" not in vdef:
+                raise KeyError(
+                    f"animations.{anim_name}.variants.{vname} : "
+                    f"clé 'frames' ou 'from' manquante")
+            else:
+                frames = vdef["frames"]
+                if not isinstance(frames, list) or not frames:
+                    raise ValueError(
+                        f"animations.{anim_name}.variants.{vname}.frames : "
+                        f"doit être une liste non vide")
+                for i, fr in enumerate(frames):
+                    if not isinstance(fr, (list, tuple)) or len(fr) != 2:
+                        raise ValueError(
+                            f"animations.{anim_name}.variants.{vname}"
+                            f".frames[{i}] doit être [col, row]")
+                    int(fr[0]); int(fr[1])
+
+    # --- Ghost states ---
+    ghost_states = animations.get("ghost", {}).get("states")
+    if not isinstance(ghost_states, dict):
+        raise TypeError("animations.ghost.states doit être un objet")
+    missing_states = _REQUIRED_GHOST_STATES - ghost_states.keys()
+    if missing_states:
+        raise KeyError(
+            f"animations.ghost.states : états manquants : "
+            f"{', '.join(sorted(missing_states))}")
+    ghost_variants = animations["ghost"].get("variants", {})
+    for sname, sdef in ghost_states.items():
+        if not isinstance(sdef, dict):
+            raise TypeError(f"animations.ghost.states.{sname} doit être un objet")
+        if not sdef.get("use_direction") and "variant" not in sdef:
+            raise KeyError(
+                f"animations.ghost.states.{sname} : 'variant' requis "
+                f"quand 'use_direction' est absent")
+        if "variant" in sdef and sdef["variant"] not in ghost_variants:
+            raise KeyError(
+                f"animations.ghost.states.{sname}.variant : "
+                f"'{sdef['variant']}' inexistant dans ghost.variants")
+        if not sdef.get("color_from_entity") and "color" not in sdef:
+            raise KeyError(
+                f"animations.ghost.states.{sname} : 'color' requis "
+                f"quand 'color_from_entity' est absent")
+        if "color" in sdef and sdef["color"] not in known_colors:
+            raise KeyError(
+                f"animations.ghost.states.{sname}.color : "
+                f"couleur '{sdef['color']}' absente de 'palettes'")
+        if "blink_color" in sdef:
+            if "blink_ms" not in sdef:
+                raise KeyError(
+                    f"animations.ghost.states.{sname} : "
+                    f"'blink_ms' requis avec 'blink_color'")
+            if sdef["blink_color"] not in known_colors:
+                raise KeyError(
+                    f"animations.ghost.states.{sname}.blink_color : "
+                    f"couleur '{sdef['blink_color']}' absente de 'palettes'")
+
+
+def _validate_food(food: Any, known_colors: set[str]) -> None:
+    """Valide la section 'food' : frame [col,row] et default_color dans palettes."""
+    if not isinstance(food, dict):
+        raise TypeError("'food' doit être un objet")
+    for fname, fdef in food.items():
+        if not isinstance(fdef, dict):
+            raise TypeError(f"food.{fname} doit être un objet")
+        if "frame" not in fdef:
+            raise KeyError(f"food.{fname} : clé 'frame' manquante")
+        frames = fdef["frame"]
+        if not isinstance(frames, list) or not frames:
+            raise ValueError(f"food.{fname}.frame doit être une liste non vide")
+        for i, fr in enumerate(frames):
+            if not isinstance(fr, (list, tuple)) or len(fr) != 2:
+                raise ValueError(f"food.{fname}.frame[{i}] doit être [col, row]")
+            int(fr[0]); int(fr[1])
+        if "default_color" not in fdef:
+            raise KeyError(f"food.{fname} : clé 'default_color' manquante")
+        color = fdef["default_color"]
+        if color not in known_colors:
+            raise KeyError(
+                f"food.{fname}.default_color : couleur '{color}' "
+                f"absente de 'palettes'")
+
+
+def _extract_constants(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Extrait et valide toutes les constantes typées du manifeste."""
+    _sheet = manifest["sheet"]
+    _tiles = manifest["tiles"]
+    _maze  = manifest["maze"]
+    _wall  = manifest["colors"]["wall"]
+
+    # Palettes : validation structurelle + collecte des noms connus.
+    palettes = manifest["palettes"]
+    if not isinstance(palettes, dict):
+        raise TypeError("'palettes' doit être un objet")
+    for pname, pval in palettes.items():
+        if not isinstance(pval, (list, tuple)) or len(pval) != 2:
+            raise ValueError(f"palettes.{pname} doit être [col, row]")
+        int(pval[0]); int(pval[1])
+    known_colors: set[str] = set(palettes.keys())
+
+    # Tiles requises.
+    gommes = _tiles.get("gommes", {})
+    missing_gum = _REQUIRED_GUM_TILES - gommes.keys()
+    if missing_gum:
+        raise KeyError(
+            f"tiles.gommes : tuile(s) manquante(s) : {', '.join(sorted(missing_gum))}")
+    score_tiles = _tiles.get("score", {})
+    missing_score = _REQUIRED_SCORE_TILES - score_tiles.keys()
+    if missing_score:
+        raise KeyError(
+            f"tiles.score : tuile(s) manquante(s) : {', '.join(sorted(missing_score))}")
+
+    _validate_food(manifest["food"], known_colors)
+    _validate_animations(manifest["animations"], known_colors)
+
+    return {
+        "SHEET_PATH": str(_sheet["path"]),
+        "MACRO_ROW_HEIGHT": int(_sheet["macro_row_height"]),
+        "LARGE_BLOCK_Y_OFFSET": int(_sheet["large_block_y_offset"]),
+        "SMALL_BLOCK": dict(_sheet["small_block"]),
+        "LARGE_BLOCK": dict(_sheet["large_block"]),
+        "COLORS": _coords(palettes),
+        "PALETTE_RGB": _rgb(manifest["palette_rgb"]),
+        "GHOST_COLORS": _rgb(manifest["ghost_colors"]),
+        "WALL_BLUE": (int(_wall[0]), int(_wall[1]), int(_wall[2])),
+        "GOMMES_TILES": _coords(gommes),
+        "SCORE_SPRITE": _coords(score_tiles),
+        "ASCII_TILE": _coords(_tiles["ascii"]),
+        "MAZE_TILE": dict(_maze["tiles"]),
+        "CORNER_MAP": {int(c): n for c, n in _maze["corner_map"].items()},
+        "BORDER_MAPS": {
+            edge: {int(c): n for c, n in mapping.items()}
+            for edge, mapping in _maze["border_maps"].items()
+        },
+        "FOOD": dict(manifest["food"]),
+    }
+
+
+try:
+    _constants = _extract_constants(MANIFEST)
+except Exception as _e:
+    if MANIFEST_WARNING is None:
+        MANIFEST_WARNING = (
+            f"Manifeste invalide (valeurs incorrectes : {_e}) — fallback chargé."
+        )
+        print(f"Avertissement : {MANIFEST_WARNING}")
+    MANIFEST = _FALLBACK_MANIFEST
+    _constants = _extract_constants(MANIFEST)
+
 # --- Géométrie de la planche assets/default.png ------------------------------
-_SHEET = MANIFEST["sheet"]
-SHEET_PATH: str = _SHEET["path"]
-MACRO_ROW_HEIGHT: int = _SHEET["macro_row_height"]
-LARGE_BLOCK_Y_OFFSET: int = _SHEET["large_block_y_offset"]
-SMALL_BLOCK: dict[str, int] = _SHEET["small_block"]
-LARGE_BLOCK: dict[str, int] = _SHEET["large_block"]
+SHEET_PATH: str = _constants["SHEET_PATH"]
+MACRO_ROW_HEIGHT: int = _constants["MACRO_ROW_HEIGHT"]
+LARGE_BLOCK_Y_OFFSET: int = _constants["LARGE_BLOCK_Y_OFFSET"]
+SMALL_BLOCK: dict[str, int] = _constants["SMALL_BLOCK"]
+LARGE_BLOCK: dict[str, int] = _constants["LARGE_BLOCK"]
 
 # --- Palettes (position dans la planche) + couleurs RGB des éléments ---------
-COLORS: dict[str, tuple[int, int]] = _coords(MANIFEST["palettes"])
-PALETTE_RGB: dict[str, tuple[int, int, int]] = _rgb(MANIFEST["palette_rgb"])
-GHOST_COLORS: dict[str, tuple[int, int, int]] = _rgb(MANIFEST["ghost_colors"])
-_wall = MANIFEST["colors"]["wall"]
-WALL_BLUE: tuple[int, int, int] = (_wall[0], _wall[1], _wall[2])
+COLORS: dict[str, tuple[int, int]] = _constants["COLORS"]
+PALETTE_RGB: dict[str, tuple[int, int, int]] = _constants["PALETTE_RGB"]
+GHOST_COLORS: dict[str, tuple[int, int, int]] = _constants["GHOST_COLORS"]
+WALL_BLUE: tuple[int, int, int] = _constants["WALL_BLUE"]
 
 # --- Tuiles statiques (gommes, scores, police bitmap) ------------------------
-_TILES = MANIFEST["tiles"]
-GOMMES_TILES: dict[str, tuple[int, int]] = _coords(_TILES["gommes"])
-SCORE_SPRITE: dict[str, tuple[int, int]] = _coords(_TILES["score"])
-ASCII_TILE: dict[str, tuple[int, int]] = _coords(_TILES["ascii"])
+GOMMES_TILES: dict[str, tuple[int, int]] = _constants["GOMMES_TILES"]
+SCORE_SPRITE: dict[str, tuple[int, int]] = _constants["SCORE_SPRITE"]
+ASCII_TILE: dict[str, tuple[int, int]] = _constants["ASCII_TILE"]
 
 # --- Labyrinthe (tuiles + tables de masques de murs) -------------------------
-_MAZE = MANIFEST["maze"]
-MAZE_TILE: dict[str, list[int]] = _MAZE["tiles"]
-CORNER_MAP: dict[int, Optional[str]] = {
-    int(code): name for code, name in _MAZE["corner_map"].items()}
-BORDER_MAPS: dict[str, dict[int, str]] = {
-    edge: {int(code): name for code, name in mapping.items()}
-    for edge, mapping in _MAZE["border_maps"].items()
-}
+MAZE_TILE: dict[str, list[int]] = _constants["MAZE_TILE"]
+CORNER_MAP: dict[int, Optional[str]] = _constants["CORNER_MAP"]
+BORDER_MAPS: dict[str, dict[int, str]] = _constants["BORDER_MAPS"]
 
 # --- Fruits bonus ------------------------------------------------------------
-FOOD: dict[str, Any] = MANIFEST["food"]
+FOOD: dict[str, Any] = _constants["FOOD"]
