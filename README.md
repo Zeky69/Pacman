@@ -306,3 +306,6 @@ AI (Claude) was used during this project for the following tasks:
 - **Explaining library interfaces** — in particular the `mazegenerator` bit-encoding and Pygame rect/surface APIs.
 
 All AI-generated content was reviewed, tested, and validated before inclusion. The core game logic (ghost BFS, doubled-grid collision, timer clamping) was written and debugged manually.
+
+### Link Itch.io
+https://thorfinn61.itch.io/pac-man
